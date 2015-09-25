@@ -21,14 +21,21 @@ class ofApp : public ofBaseApp{
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
     
+        const static int GRABBER_WIDTH = 640;
+        const static int GRABBER_HEIGHT = 480;
+    
         ofVideoGrabber      vidGrabber;
         ofxVideoRecorder    vidRecorder;
         ofSoundStream       soundStream;
         bool bRecording;
         int sampleRate;
         int channels;
+    
         string fileName;
         string fileExt;
+        string fullFileName;
+    
+        ofVideoPlayer recordedVideoPlayback;
     
         ofShader badTvShader, staticShader;
     

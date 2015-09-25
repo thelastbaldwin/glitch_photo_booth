@@ -2,14 +2,17 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-    vidGrabber.setDesiredFrameRate(30);
-    vidGrabber.initGrabber(640, 480);
     
-    //    vidRecorder.setFfmpegLocation(ofFilePath::getAbsolutePath("ffmpeg")); // use this is you have ffmpeg installed in your data folder
+    
+    vidGrabber.setDesiredFrameRate(30);
+    vidGrabber.initGrabber(GRABBER_WIDTH, GRABBER_HEIGHT);
+    
+    vidRecorder.setFfmpegLocation(ofFilePath::getAbsolutePath("ffmpeg/ffmpeg")); // use this is you have ffmpeg installed in your data folder
     
     fileName = "testMovie";
     fileExt = ".mp4"; // ffmpeg uses the extension to determine the container type. run 'ffmpeg -formats' to see supported formats
     vidRecorder.setVideoCodec("h264");
+    vidRecorder.setPixelFormat("yuv420p");
     vidRecorder.setVideoBitrate("800k");
     
     bRecording = false;
@@ -17,9 +20,6 @@ void ofApp::setup(){
     
     badTvShader.load("shaders/passthrough_vert.c", "shaders/badtv_frag.c");
     staticShader.load("shaders/passthrough_vert.c", "shaders/static_frag.c");
-    
-    badTvShader.printActiveAttributes();
-    badTvShader.printActiveUniforms();
 }
 
 //--------------------------------------------------------------
@@ -40,12 +40,18 @@ void ofApp::update(){
     if (vidRecorder.hasAudioError()) {
         ofLogWarning("The video recorder failed to write some audio samples!");
     }
+    
+    if(recordedVideoPlayback.isLoaded()){
+        recordedVideoPlayback.update();
+    }
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
     ofSetColor(255, 255, 255);
-    vidGrabber.draw(0,0);
+    
+    int topMargin = (ofGetHeight() - GRABBER_HEIGHT) / 2;
+    vidGrabber.draw(0,topMargin);
     
     stringstream ss;
     ss << "FPS: " << ofGetFrameRate() << endl
@@ -61,6 +67,10 @@ void ofApp::draw(){
         ofSetColor(255, 0, 0);
         ofCircle(ofGetWidth() - 20, 20, 5);
     }
+    
+    if(recordedVideoPlayback.isLoaded()){
+        recordedVideoPlayback.draw(ofGetWidth() - GRABBER_WIDTH, topMargin);
+    }
 
 }
 
@@ -75,7 +85,8 @@ void ofApp::keyReleased(int key){
     if(key=='r'){
         bRecording = !bRecording;
         if(bRecording && !vidRecorder.isInitialized()) {
-            vidRecorder.setup(fileName+ofGetTimestampString()+fileExt, vidGrabber.getWidth(), vidGrabber.getHeight(), 30); // no audio
+            fullFileName = fileName + ofGetTimestampString() + fileExt;
+            vidRecorder.setup(fullFileName, GRABBER_WIDTH, GRABBER_HEIGHT, 30); // no audio
             
             // Start recording
             vidRecorder.start();
@@ -90,6 +101,7 @@ void ofApp::keyReleased(int key){
     if(key=='c'){
         bRecording = false;
         vidRecorder.close();
+        recordedVideoPlayback.loadMovie(fullFileName);
     }
 }
 
