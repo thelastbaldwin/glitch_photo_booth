@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
+#include "ofxVideoRecorder.h"
 
 class ofApp : public ofBaseApp{
 
@@ -8,6 +9,7 @@ class ofApp : public ofBaseApp{
 		void setup();
 		void update();
 		void draw();
+        void exit();
 
 		void keyPressed(int key);
 		void keyReleased(int key);
@@ -18,5 +20,16 @@ class ofApp : public ofBaseApp{
 		void windowResized(int w, int h);
 		void dragEvent(ofDragInfo dragInfo);
 		void gotMessage(ofMessage msg);
-		
+    
+        ofVideoGrabber      vidGrabber;
+        ofxVideoRecorder    vidRecorder;
+        ofSoundStream       soundStream;
+        bool bRecording;
+        int sampleRate;
+        int channels;
+        string fileName;
+        string fileExt;
+        
+        ofFbo recordFbo;
+        ofPixels recordPixels;
 };
