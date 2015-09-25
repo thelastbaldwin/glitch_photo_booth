@@ -29,7 +29,9 @@ class ofApp : public ofBaseApp{
         int channels;
         string fileName;
         string fileExt;
-        
+    
+        ofShader badTvShader, staticShader;
+    
         ofFbo recordFbo;
         ofPixels recordPixels;
 };

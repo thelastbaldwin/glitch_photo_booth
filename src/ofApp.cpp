@@ -14,6 +14,12 @@ void ofApp::setup(){
     
     bRecording = false;
     ofEnableAlphaBlending();
+    
+    badTvShader.load("shaders/passthrough_vert.c", "shaders/badtv_frag.c");
+    staticShader.load("shaders/passthrough_vert.c", "shaders/static_frag.c");
+    
+    badTvShader.printActiveAttributes();
+    badTvShader.printActiveUniforms();
 }
 
 //--------------------------------------------------------------
@@ -64,12 +70,31 @@ void ofApp::exit(){
 }
 
 //--------------------------------------------------------------
-void ofApp::keyPressed(int key){
-
+void ofApp::keyReleased(int key){
+    
+    if(key=='r'){
+        bRecording = !bRecording;
+        if(bRecording && !vidRecorder.isInitialized()) {
+            vidRecorder.setup(fileName+ofGetTimestampString()+fileExt, vidGrabber.getWidth(), vidGrabber.getHeight(), 30); // no audio
+            
+            // Start recording
+            vidRecorder.start();
+        }
+        else if(!bRecording && vidRecorder.isInitialized()) {
+            vidRecorder.setPaused(true);
+        }
+        else if(bRecording && vidRecorder.isInitialized()) {
+            vidRecorder.setPaused(false);
+        }
+    }
+    if(key=='c'){
+        bRecording = false;
+        vidRecorder.close();
+    }
 }
 
 //--------------------------------------------------------------
-void ofApp::keyReleased(int key){
+void ofApp::keyPressed(int key){
 
 }
 
