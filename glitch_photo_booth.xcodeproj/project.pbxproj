@@ -1587,9 +1587,9 @@
 						<string>../../../addons/ofxOsc/src</string>
 						<string>../../../addons/ofxVideoRecorder/libs</string>
 						<string>../../../addons/ofxVideoRecorder/src</string>
-						<string>src</string>
 						<string>../../../addons/ofxGui/libs</string>
 						<string>../../../addons/ofxGui/src</string>
+						<string>src</string>
 					</array>
 					<key>ARCHS</key>
 					<string>$(NATIVE_ARCH)</string>
@@ -1658,9 +1658,9 @@
 						<string>../../../addons/ofxOsc/src</string>
 						<string>../../../addons/ofxVideoRecorder/libs</string>
 						<string>../../../addons/ofxVideoRecorder/src</string>
-						<string>src</string>
 						<string>../../../addons/ofxGui/libs</string>
 						<string>../../../addons/ofxGui/src</string>
+						<string>src</string>
 					</array>
 					<key>ARCHS</key>
 					<string>$(NATIVE_ARCH)</string>

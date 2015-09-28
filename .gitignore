@@ -1,5 +1,9 @@
 .DS_Store
 
 *.app
-*.xcodeproj/**
+*.xcodeproj/
+*.pbxproj
 node_modules/
+**ffmpeg_compiled/
+bin/**/*.mp4
+bin/**/*.mov

@@ -2,18 +2,28 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
+    ofEnableAlphaBlending();
+    ofEnableSmoothing();
     
+    ofSetFrameRate(30);
+    ofSetVerticalSync(true);
+    
+    ofSetLogLevel(OF_LOG_VERBOSE);
+    
+    vidRecorder = ofPtr<ofQTKitGrabber>( new ofQTKitGrabber());
+    vidGrabber.setGrabber(vidRecorder);
     
     vidGrabber.setDesiredFrameRate(30);
+//    vidGrabber.listDevices();
+    vidGrabber.setDeviceID(0);
     vidGrabber.initGrabber(GRABBER_WIDTH, GRABBER_HEIGHT);
     
-    vidRecorder.setFfmpegLocation(ofFilePath::getAbsolutePath("ffmpeg/ffmpeg")); // use this is you have ffmpeg installed in your data folder
+    vidRecorder->initRecording();
     
-    fileName = "testMovie";
-    fileExt = ".mp4"; // ffmpeg uses the extension to determine the container type. run 'ffmpeg -formats' to see supported formats
-    vidRecorder.setVideoCodec("h264");
-    vidRecorder.setPixelFormat("yuv420p");
-    vidRecorder.setVideoBitrate("800k");
+    // Register for events so we'll know when videos finish saving.
+    // TODO: add event for when video is done converting. Do this conversion via node.
+    ofAddListener(vidRecorder->videoSavedEvent, this, &ofApp::videoSaved);
+
     
     bRecording = false;
     ofEnableAlphaBlending();
@@ -25,21 +35,6 @@ void ofApp::setup(){
 //--------------------------------------------------------------
 void ofApp::update(){
     vidGrabber.update();
-    if(vidGrabber.isFrameNew() && bRecording){
-        bool success = vidRecorder.addFrame(vidGrabber.getPixelsRef());
-        if (!success) {
-            ofLogWarning("This frame was not added!");
-        }
-    }
-    
-    // Check if the video recorder encountered any error while writing video frame or audio smaples.
-    if (vidRecorder.hasVideoError()) {
-        ofLogWarning("The video recorder failed to write some frames!");
-    }
-    
-    if (vidRecorder.hasAudioError()) {
-        ofLogWarning("The video recorder failed to write some audio samples!");
-    }
     
     if(recordedVideoPlayback.isLoaded()){
         recordedVideoPlayback.update();
@@ -74,39 +69,52 @@ void ofApp::draw(){
 
 }
 
+void ofApp::videoSaved(ofVideoSavedEventArgs& e){
+    // the ofQTKitGrabber sends a message with the file name and any errors when the video is done recording
+    if(e.error.empty()){
+        recordedVideoPlayback.loadMovie(e.videoPath);
+        recordedVideoPlayback.play();
+        
+        //clue for how to launch system commands
+        //could be used to send the last video somewhere
+        //        if(bLaunchInQuicktime) {
+        //            ofSystem("open " + e.videoPath);
+        //        }
+    }
+    else {
+        ofLogError("videoSavedEvent") << "Video save error: " << e.error;
+    }
+}
+
 //-------------------------------------------------------------
 void ofApp::exit(){
-    vidRecorder.close();
+
+}
+
+//-------------------------------------------------------------
+void ofApp::keyPressed(int key){
+    
+    if(key == ' '){
+        
+        //if it is recording, stop
+        if(vidRecorder->isRecording()){
+            vidRecorder->stopRecording();
+        }
+        else {
+            // otherwise start a new recording.
+            // before starting, make sure that the video file
+            // is already in use by us (i.e. being played), or else
+            // we won't be able to record over it.
+            if(recordedVideoPlayback.isLoaded()){
+                recordedVideoPlayback.close();
+            }
+            vidRecorder->startRecording(ofGetTimestampString("%n-%e-%Y-%H-%M-%s_")+ "oc.mov");
+        }
+    }
 }
 
 //--------------------------------------------------------------
 void ofApp::keyReleased(int key){
-    
-    if(key=='r'){
-        bRecording = !bRecording;
-        if(bRecording && !vidRecorder.isInitialized()) {
-            fullFileName = fileName + ofGetTimestampString() + fileExt;
-            vidRecorder.setup(fullFileName, GRABBER_WIDTH, GRABBER_HEIGHT, 30); // no audio
-            
-            // Start recording
-            vidRecorder.start();
-        }
-        else if(!bRecording && vidRecorder.isInitialized()) {
-            vidRecorder.setPaused(true);
-        }
-        else if(bRecording && vidRecorder.isInitialized()) {
-            vidRecorder.setPaused(false);
-        }
-    }
-    if(key=='c'){
-        bRecording = false;
-        vidRecorder.close();
-        recordedVideoPlayback.loadMovie(fullFileName);
-    }
-}
-
-//--------------------------------------------------------------
-void ofApp::keyPressed(int key){
 
 }
 

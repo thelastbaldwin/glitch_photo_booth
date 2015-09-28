@@ -1,7 +1,6 @@
 #pragma once
 
 #include "ofMain.h"
-#include "ofxVideoRecorder.h"
 
 class ofApp : public ofBaseApp{
 
@@ -25,8 +24,11 @@ class ofApp : public ofBaseApp{
         const static int GRABBER_HEIGHT = 480;
     
         ofVideoGrabber      vidGrabber;
-        ofxVideoRecorder    vidRecorder;
-        ofSoundStream       soundStream;
+        ofPtr<ofQTKitGrabber>	vidRecorder;
+        ofVideoPlayer recordedVideoPlayback;
+    
+        void videoSaved(ofVideoSavedEventArgs& e);
+
         bool bRecording;
         int sampleRate;
         int channels;
@@ -34,8 +36,6 @@ class ofApp : public ofBaseApp{
         string fileName;
         string fileExt;
         string fullFileName;
-    
-        ofVideoPlayer recordedVideoPlayback;
     
         ofShader badTvShader, staticShader;
     
