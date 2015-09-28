@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ofMain.h"
+#include "ofxOsc.h"
 
 class ofApp : public ofBaseApp{
 
@@ -22,6 +23,10 @@ class ofApp : public ofBaseApp{
     
         const static int GRABBER_WIDTH = 640;
         const static int GRABBER_HEIGHT = 480;
+        const static int SEND_PORT = 12346;
+        const static int RECEIVE_PORT = 12345;
+    
+        const std::string HOST = "localhost";
     
         ofVideoGrabber      vidGrabber;
         ofPtr<ofQTKitGrabber>	vidRecorder;
@@ -41,4 +46,8 @@ class ofApp : public ofBaseApp{
     
         ofFbo recordFbo;
         ofPixels recordPixels;
+    
+        ofxOscReceiver receiver;
+        ofxOscSender sender;
+        void sendMessage(const string& filename, const string& address);
 };

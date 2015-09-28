@@ -9,8 +9,8 @@ var converter = require('./converter.js'),
 	SEND_PORT = 12345,
 	RECEIVE_PORT = 12346;
 
-// sendSocket.bind(SEND_PORT);
-// receiveSocket.bind(RECEIVE_PORT);
+sendSocket.bind(SEND_PORT);
+receiveSocket.bind(RECEIVE_PORT);
 
 function getOSCMessage(msg){
 	//extract relevant data from OSC Message
@@ -24,9 +24,9 @@ function getOSCMessage(msg){
 		// args = element.args; //contains 'type' and 'value
 
 		// return {
-		// 	address: address,
-		// 	filename: args[0].value,
-		// 	id : args[1].value
+		// address: address,
+		// filename: args[0].value,
+		// id : args[1].value
 		// }
 
 	}catch(error){
@@ -34,19 +34,18 @@ function getOSCMessage(msg){
 	}
 }
 
-function sendOSCMessage(photoType, socketId){
-	// var buffer = osc.toBuffer({
-	// 	address: '/take/picture',
-	// 	args : [{
-	// 		type: "string",
-	// 		value: photoType
-	// 	},
-	// 	{
-	// 		type: "string",
-	// 		value: socketId
-	// 	}]
-	// });
-
-	// sendSocket.send(buffer, 0, buffer.length, SEND_PORT, 'localhost');
+function sendOSCMessage(mov_filename){
+	var buffer = osc.toBuffer({
+		address: '/take/picture',
+		args : [{
+			type: "string",
+			value: mov_filename
+		}]
+	});
+	sendSocket.send(buffer, 0, buffer.length, SEND_PORT, 'localhost');
 }
+
+var sendInterval = setInterval(function(){
+	sendOSCMessage('converted_movie.mov');
+}, 3000);
 

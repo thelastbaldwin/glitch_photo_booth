@@ -18,7 +18,6 @@ void ofApp::setup(){
     vidGrabber.initGrabber(GRABBER_WIDTH, GRABBER_HEIGHT);
     
     vidRecorder->initRecording();
-    cout << vidRecorder->getWidth() << ", " <<  vidRecorder->getHeight() << endl;
     
     // Register for events so we'll know when videos finish saving.
     // TODO: add event for when video is done converting. Do this conversion via node.
@@ -30,6 +29,10 @@ void ofApp::setup(){
     
     badTvShader.load("shaders/passthrough_vert.c", "shaders/badtv_frag.c");
     staticShader.load("shaders/passthrough_vert.c", "shaders/static_frag.c");
+    
+    //OSC Setup
+    sender.setup(HOST, SEND_PORT);
+    receiver.setup(RECEIVE_PORT);
 }
 
 //--------------------------------------------------------------
@@ -39,12 +42,19 @@ void ofApp::update(){
     if(recordedVideoPlayback.isLoaded()){
         recordedVideoPlayback.update();
     }
+    
+    while(receiver.hasWaitingMessages()){
+        // get the next message
+        ofxOscMessage m;
+        receiver.getNextMessage(&m);
+    }
 }
 
 //--------------------------------------------------------------
 void ofApp::draw(){
     ofSetColor(255, 255, 255);
     
+    //TODO: scale the video and maintain the aspect ratio
     int topMargin = (ofGetHeight() - GRABBER_HEIGHT) / 2;
     vidGrabber.draw(0,topMargin);
     
@@ -72,8 +82,11 @@ void ofApp::draw(){
 void ofApp::videoSaved(ofVideoSavedEventArgs& e){
     // the ofQTKitGrabber sends a message with the file name and any errors when the video is done recording
     if(e.error.empty()){
-        recordedVideoPlayback.loadMovie(e.videoPath);
-        recordedVideoPlayback.play();
+        //send the OSC signal with e.videoPath to start the conversion process
+        //load the video when this process is complete
+        
+//        recordedVideoPlayback.loadMovie(e.videoPath);
+//        recordedVideoPlayback.play();
         
         //clue for how to launch system commands
         //could be used to send the last video somewhere
@@ -111,6 +124,15 @@ void ofApp::keyPressed(int key){
             vidRecorder->startRecording(ofGetTimestampString("%n-%e-%Y-%H-%M-%s_")+ "oc.mov");
         }
     }
+}
+
+//--------------------------------------------------------------
+void ofApp::sendMessage(const string& filename, const string& address){
+    cout << "filename: " << filename << ", address: " << address << endl;
+    ofxOscMessage m;
+    m.setAddress(address);
+    m.addStringArg(filename);
+    sender.sendMessage(m);
 }
 
 //--------------------------------------------------------------
