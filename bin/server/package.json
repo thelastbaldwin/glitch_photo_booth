@@ -4,7 +4,9 @@
   "description": "responsible for converting mp4 and mpv movies",
   "main": "index.js",
   "dependencies": {
-    "fluent-ffmpeg": "^2.0.1"
+    "express": "^4.13.3",
+    "fluent-ffmpeg": "^2.0.1",
+    "osc-min": "^0.2.0"
   },
   "devDependencies": {},
   "scripts": {
