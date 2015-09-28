@@ -10,10 +10,11 @@ Movies are saved in mp4 format without audio.
 
 [node](http://nodejs.org)
 
-[OpenFrameworks](http://openframeworks.cc/)
+[Node fluent-mmpeg](https://github.com/fluent-ffmpeg/node-fluent-ffmpeg)
 
-[ofxVideoRecorder](https://github.com/timscaffidi/ofxVideoRecorder)
+[OpenFrameworks](http://openframeworks.cc/)
 
 ofxOFC (standard add-on)
 
 [ffmpeg](https://www.ffmpeg.org/)
+`FFMPEG_PATH` and `FFPROBE_PATH` environment variables must be set if ffmpeg is not in your PATH

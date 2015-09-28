@@ -2,3 +2,4 @@
 
 *.app
 *.xcodeproj/**
+node_modules/

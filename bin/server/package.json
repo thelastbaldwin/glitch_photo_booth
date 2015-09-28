@@ -1,0 +1,15 @@
+{
+  "name": "glitch_photo_booth_backend",
+  "version": "1.0.0",
+  "description": "responsible for converting mp4 and mpv movies",
+  "main": "index.js",
+  "dependencies": {
+    "fluent-ffmpeg": "^2.0.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC"
+}
