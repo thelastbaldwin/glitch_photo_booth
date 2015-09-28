@@ -1,2 +1,9 @@
 var converter = require('./converter');
-converter.movToMp4(converter.TEST_VID);
+
+converter.setMoviePath('../data');
+
+converter.convert('test_video.mov', function(){
+	//remove the original file
+	// fs.unlink(movFile);
+	console.log('done saving');
+});
