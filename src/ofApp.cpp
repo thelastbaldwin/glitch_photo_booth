@@ -8,17 +8,17 @@ void ofApp::setup(){
     ofSetFrameRate(30);
     ofSetVerticalSync(true);
     
-    ofSetLogLevel(OF_LOG_VERBOSE);
+//    ofSetLogLevel(OF_LOG_VERBOSE);
     
     vidRecorder = ofPtr<ofQTKitGrabber>( new ofQTKitGrabber());
-    vidGrabber.setGrabber(vidRecorder);
     
     vidGrabber.setDesiredFrameRate(30);
-//    vidGrabber.listDevices();
+    vidGrabber.setGrabber(vidRecorder);
     vidGrabber.setDeviceID(0);
     vidGrabber.initGrabber(GRABBER_WIDTH, GRABBER_HEIGHT);
     
     vidRecorder->initRecording();
+    cout << vidRecorder->getWidth() << ", " <<  vidRecorder->getHeight() << endl;
     
     // Register for events so we'll know when videos finish saving.
     // TODO: add event for when video is done converting. Do this conversion via node.
