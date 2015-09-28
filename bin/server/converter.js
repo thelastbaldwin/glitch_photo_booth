@@ -5,32 +5,27 @@ ffmpeg.setFfmpegPath(process.env.FFMPEG_PATH);
 ffmpeg.setFfprobePath(process.env.FFPROBE_PATH);
 
 module.exports = {
-	TEST_VID: "9-28-2015-10-25-24.382515_oc.mov",
+	TEST_VID: "test_video.mov",
 	MOVIE_PATH: ".",
 	movToMp4: function(movFile){
 		var fileName = movFile.substr(0, movFile.lastIndexOf('.'));
-		var mp4File = fileName + '.mp4';
 
+		//resize the orginal video and output as an mp4 at the same time
 		ffmpeg(movFile)
-		.inputFormat('mov')
+		// .inputFormat('mov')
+		.outputOptions('-pix_fmt yuv420p')
 		.noAudio()
-		.videoCodec('libx264')
+		// .videoCodec('libx264')
 		.fps('29.97')
 		.size('640x480')
 		.autopad()
-		.format('mp4')
+		.output(fileName + '_converted.mov')
 		.on('end', function(){
-			console.log(fileName + '.mp4 saved');
+			console.log('done saving');
 		}).
 		on('error', function(err){
 			console.log(err);
 		})
-		.save(mp4File);
-		
+		.run();
 	}
 };
-
-ffmpeg.getAvailableCodecs(function(err, codecs) {
-  console.log('Available codecs:');
-  console.dir(codecs);
-});
