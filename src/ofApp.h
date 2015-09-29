@@ -2,6 +2,7 @@
 
 #include "ofMain.h"
 #include "ofxVideoRecorder.h"
+#include "ofxGui.h"
 
 class ofApp : public ofBaseApp{
     
@@ -20,11 +21,33 @@ public:
     void windowResized(int w, int h);
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
-    void audioIn(float * input, int bufferSize, int nChannels);
+    
+    
+    bool hideGui;
+    ofxPanel gui;
+    ofParameterGroup parameters;
+    ofParameterGroup BadTV;
+    ofParameter<float> thickDistort;
+    ofParameter<float> fineDistort;
+    ofParameter<float> distortSpeed;
+    ofParameter<float> rollSpeed;
+    
+    ofParameterGroup RGBShift;
+    ofParameter<float> rgbAmount;
+    ofParameter<float> angle;
+    
+    ofParameterGroup Static;
+    ofParameter<float> staticAmount;
+    ofParameter<float> size;
+    
+    ofParameterGroup Scanlines;
+    ofParameter<int> count;
+    ofParameter<float> sIntensity;
+    ofParameter<float> nIntensity;
     
     ofVideoGrabber      vidGrabber;
     ofxVideoRecorder    vidRecorder;
-    ofSoundStream       soundStream;
+
     bool bRecording;
     int sampleRate;
     int channels;

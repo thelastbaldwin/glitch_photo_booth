@@ -26,6 +26,34 @@ void ofApp::setup(){
     recordFbo.allocate(vidGrabber.width, vidGrabber.height);
     badTvShader.load("shaders/passthrough_vert.c", "shaders/badtv_frag.c");
     staticShader.load("shaders/passthrough_vert.c", "shaders/static_frag.c");
+    
+    //gui stuff
+    BadTV.setName("Bad TV");
+    BadTV.add(thickDistort.set("Thick Distort", 0.1, 0.1, 20));
+    BadTV.add(fineDistort.set("Fine Distort", 0.1, 0.1, 20));
+    BadTV.add(distortSpeed.set("Distort Speed", 0.0, 0.0, 1.0));
+    BadTV.add(rollSpeed.set("Roll Speed", 0.0, 0.0, 1.0));
+    
+    RGBShift.setName("RGB Shift");
+    RGBShift.add(rgbAmount.set("Amount", 0.0, 0.0, 0.1));
+    RGBShift.add(angle.set("Angle", 0.0, 0.0, 2.0));
+    
+    Static.setName("Static");
+    Static.add(staticAmount.set("Amount", 0.0, 0.0, 1.0));
+    Static.add(size.set("Size", 1, 1, 100));
+    
+    Scanlines.setName("Scanlines");
+    Scanlines.add(count.set("Count", 800, 50, 1000));
+    Scanlines.add(sIntensity.set("sIntensity", 0.4, 0, 2));
+    Scanlines.add(nIntensity.set("nIntensity", 0.1, 0, 2));
+    
+    parameters.add(BadTV);
+    parameters.add(RGBShift);
+    parameters.add(Static);
+    parameters.add(Scanlines);
+    
+    gui.setup(parameters);
+    gui.minimizeAll();
 }
 
 void ofApp::exit() {
@@ -63,7 +91,6 @@ void ofApp::draw(){
     
     stringstream ss;
     ss << "video queue size: " << vidRecorder.getVideoQueueSize() << endl
-    << "audio queue size: " << vidRecorder.getAudioQueueSize() << endl
     << "FPS: " << ofGetFrameRate() << endl
     << (bRecording?"pause":"start") << " recording: r" << endl
     << (bRecording?"close current video file: c":"") << endl;
@@ -92,12 +119,15 @@ void ofApp::draw(){
         recordFbo.draw(640, 0);
         
     }
+    
+    if( hideGui ){
+        ofShowCursor();
+        gui.draw();
+    }else{
+        ofHideCursor();
+    }
 }
 
-void ofApp::audioIn(float *input, int bufferSize, int nChannels){
-    if(bRecording)
-        vidRecorder.addAudioSamples(input, bufferSize, nChannels);
-}
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
@@ -133,6 +163,9 @@ void ofApp::keyReleased(int key){
         recordedVideoPlayback.play();
     }if(key=='q'){
         exit();
+    }
+    if(key=='h'){
+        hideGui = !hideGui;
     }
 }
 
