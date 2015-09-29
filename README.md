@@ -14,8 +14,10 @@ Movies are saved in mp4 format without audio.
 
 [OpenFrameworks](http://openframeworks.cc/)
 
+[ofxVideoRecorder](https://github.com/timscaffidi/ofxVideoRecorder)
+
 ofxOFC (standard add-on)
 
 [ffmpeg](https://www.ffmpeg.org/)
 
-`FFMPEG_PATH` and `FFPROBE_PATH` environment variables must be set if ffmpeg is not in your PATH. These variables are the binaries themselves, not the folder paths.
+ffmpeg must be added to your path
