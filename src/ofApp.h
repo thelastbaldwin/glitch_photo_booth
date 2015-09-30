@@ -50,6 +50,8 @@ public:
     
     ofVideoGrabber      vidGrabber;
     ofxVideoRecorder    vidRecorder;
+    ofxVideoRecorder    vidRecorderMP4;
+    ofxVideoRecorder    vidRecorderMP4Distort;
 
     bool bRecording;
     string fileName;
@@ -61,6 +63,7 @@ public:
     ofFbo staticFbo;
     ofFbo filmFbo;
     ofPixels recordPixels;
+    ofImage recordImage;
     
     ofShader badTvShader, rgbShiftShader, filmShader, staticShader;
     

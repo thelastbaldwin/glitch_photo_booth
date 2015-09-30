@@ -8,15 +8,19 @@ void ofApp::setup(){
     ofSetLogLevel(OF_LOG_VERBOSE);
     vidGrabber.setDesiredFrameRate(30);
     vidGrabber.initGrabber(640, 480);
-    //    vidRecorder.setFfmpegLocation(ofFilePath::getAbsolutePath("ffmpeg")); // use this is you have ffmpeg installed in your data folder
     
     fileName = "testMovie";
     fileExt = ".mov"; // ffmpeg uses the extension to determine the container type. run 'ffmpeg -formats' to see supported formats
     
     // override the default codecs if you like
     // run 'ffmpeg -codecs' to find out what your implementation supports (or -formats on some older versions)
+    string bitRate = "800k";
     //    vidRecorder.setVideoCodec("libx264");
-    vidRecorder.setVideoBitrate("800k");
+    vidRecorder.setVideoBitrate(bitRate);
+    vidRecorderMP4.setVideoBitrate(bitRate);
+    vidRecorderMP4.setVideoCodec("libx264");
+    vidRecorderMP4Distort.setVideoBitrate(bitRate);
+    vidRecorderMP4Distort.setVideoCodec("libx264");
     
     bRecording = false;
     ofEnableAlphaBlending();
@@ -26,10 +30,12 @@ void ofApp::setup(){
     badTVFbo.allocate(vidGrabber.width, vidGrabber.height);
     rgbShiftFbo.allocate(vidGrabber.width, vidGrabber.height);
     staticFbo.allocate(vidGrabber.width, vidGrabber.height);
+    clearFbo(filmFbo);
     clearFbo(badTVFbo);
     clearFbo(rgbShiftFbo);
     clearFbo(staticFbo);
     
+    //set up basic quad
     quad.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
     quad.addVertex(ofPoint(0, vidGrabber.width, 0));
     quad.addTexCoord(ofPoint(0, vidGrabber.width, 0));
@@ -77,31 +83,100 @@ void ofApp::setup(){
     //for testing so I don't have to keep taking videos
     recordedVideoPlayback.loadMovie("test_video.mov");
     recordedVideoPlayback.play();
+    
+    recordPixels.allocate(vidGrabber.width, vidGrabber.height, OF_IMAGE_COLOR);
+    recordImage.allocate(vidGrabber.width, vidGrabber.height, OF_IMAGE_COLOR);
 }
 
 void ofApp::exit() {
     vidRecorder.close();
+    vidRecorderMP4.close();
+    vidRecorderMP4Distort.close();
 }
 
 //--------------------------------------------------------------
 void ofApp::update(){
     vidGrabber.update();
     if(vidGrabber.isFrameNew() && bRecording){
-        bool success = vidRecorder.addFrame(vidGrabber.getPixelsRef());
-        if (!success) {
-            ofLogWarning("This frame was not added!");
+
+        if (!vidRecorder.addFrame(vidGrabber.getPixelsRef())){
+            ofLogWarning("This frame was not added to the main recorder!");
         }
         
-        //do fbo stack stuff here?
+        if( !vidRecorderMP4.addFrame(vidGrabber.getPixelsRef())){
+            ofLogWarning("This frame was not added to the mp4 recorder!");
+        }
+        
+        filmFbo.begin();
+        filmShader.begin();
+        filmShader.setUniformTexture("tDiffuse", vidGrabber.getTextureReference(), 1);
+        filmShader.setUniform1f("width", vidGrabber.width);
+        filmShader.setUniform1f("height", vidGrabber.height);
+        filmShader.setUniform1f("time", time);
+        filmShader.setUniform1i("grayscale", 0);
+        filmShader.setUniform1f("nIntensity", nIntensity);
+        filmShader.setUniform1f("sIntensity", sIntensity);
+        filmShader.setUniform1f("sCount", count);
+        quad.draw();
+        filmShader.end();
+        filmFbo.end();
+        
+        badTVFbo.begin();
+        badTvShader.begin();
+        badTvShader.setUniformTexture("tDiffuse", filmFbo.getTextureReference(), 1);
+        badTvShader.setUniform1f("width", vidGrabber.width);
+        badTvShader.setUniform1f("height", vidGrabber.height);
+        badTvShader.setUniform1f("time", time);
+        badTvShader.setUniform1f("distortion", thickDistort);
+        badTvShader.setUniform1f("distortion2", fineDistort);
+        badTvShader.setUniform1f("speed", distortSpeed);
+        badTvShader.setUniform1f("rollSpeed", rollSpeed);
+        quad.draw();
+        badTvShader.end();
+        badTVFbo.end();
+        
+        rgbShiftFbo.begin();
+        rgbShiftShader.begin();
+        rgbShiftShader.setUniformTexture("tDiffuse", badTVFbo.getTextureReference(), 1);
+        rgbShiftShader.setUniform1f("width", vidGrabber.width);
+        rgbShiftShader.setUniform1f("height", vidGrabber.height);
+        rgbShiftShader.setUniform1f("amount", rgbAmount);
+        rgbShiftShader.setUniform1f("angle", angle);
+        quad.draw();
+        rgbShiftShader.end();
+        rgbShiftFbo.end();
+        
+        staticFbo.begin();
+        staticShader.begin();
+        staticShader.setUniformTexture("tDiffuse", rgbShiftFbo.getTextureReference(), 1);
+        staticShader.setUniform1f("width", vidGrabber.width);
+        staticShader.setUniform1f("height", vidGrabber.height);
+        staticShader.setUniform1f("time", time);
+        staticShader.setUniform1f("amount", staticAmount);
+        staticShader.setUniform1f("size", size);
+        quad.draw();
+        staticShader.end();
+        staticFbo.end();
+        
+        ofPixels px;
+        staticFbo.readToPixels(px);
+        ofImage img;
+        img.setFromPixels(px);
+        
+        if (!vidRecorderMP4Distort.addFrame(img)){
+            ofLogWarning("This frame was not added to the distorted mp4 recorder!");
+        }
     }
     
     // Check if the video recorder encountered any error while writing video frame or audio smaples.
     if (vidRecorder.hasVideoError()) {
-        ofLogWarning("The video recorder failed to write some frames!");
+        ofLogWarning("The main video recorder failed to write some frames!");
     }
-    
-    if (vidRecorder.hasAudioError()) {
-        ofLogWarning("The video recorder failed to write some audio samples!");
+    if( vidRecorderMP4.hasVideoError()){
+        ofLogWarning("The mp4 video recorder failed to write some frames!");
+    }
+    if(vidRecorderMP4Distort.hasVideoError()){
+        ofLogWarning("The distorted mp4 video recorder failed to write some frames!");
     }
     
     if(recordedVideoPlayback.isLoaded()){
@@ -190,7 +265,6 @@ void ofApp::draw(){
         
         //final output
         staticFbo.draw(640, 0);
-        
     }
     
     if( hideGui ){
@@ -217,12 +291,18 @@ void ofApp::keyPressed(int key){
 void ofApp::keyReleased(int key){
     
     if(key=='r'){
+        //TODO: remove stop/start functionality
+        //TODO: move this and stop into methods. maintain keyboard bindings
         bRecording = !bRecording;
         if(bRecording && !vidRecorder.isInitialized()) {
             lastFile = fileName+ofGetTimestampString()+fileExt;
             vidRecorder.setupCustomOutput(vidGrabber.getWidth(), vidGrabber.getHeight(), 30, 0, 0, "-vcodec libx264 -b 800k -pix_fmt yuv420p -f mov " + ofFilePath::getAbsolutePath(lastFile), true, false); //the last booleans sync the video timing to the main thread
+            vidRecorderMP4.setup(fileName+ofGetTimestampString()+".mp4", vidGrabber.getWidth(), vidGrabber.getHeight(), 30, true, false); // no audio
+            vidRecorderMP4Distort.setup(fileName+ofGetTimestampString()+"_distorted.mp4", vidGrabber.getWidth(), vidGrabber.getHeight(), 30, true, false); // no audio
             
             vidRecorder.start();
+            vidRecorderMP4.start();
+            vidRecorderMP4Distort.start();
         }
         else if(!bRecording && vidRecorder.isInitialized()) {
             vidRecorder.setPaused(true);
@@ -234,15 +314,19 @@ void ofApp::keyReleased(int key){
     if(key=='c'){
         bRecording = false;
         vidRecorder.close();
+        vidRecorderMP4.close();
+        vidRecorderMP4Distort.close();
         
         //race condition!
-        ofSleepMillis(500);
+        ofSleepMillis(750);
         
         //try and load the video
         recordedVideoPlayback.loadMovie(lastFile);
         recordedVideoPlayback.play();
+        
+        //signal via osc that we've saved a new set of videos
     }if(key=='q'){
-        exit();
+        ofExit();
     }
     if(key=='h'){
         hideGui = !hideGui;
