@@ -33,6 +33,7 @@ void ofApp::setup(){
     BadTV.add(fineDistort.set("Fine Distort", 0.1, 0.1, 20));
     BadTV.add(distortSpeed.set("Distort Speed", 0.0, 0.0, 1.0));
     BadTV.add(rollSpeed.set("Roll Speed", 0.0, 0.0, 1.0));
+    time = 0.0;
     
     RGBShift.setName("RGB Shift");
     RGBShift.add(rgbAmount.set("Amount", 0.0, 0.0, 0.1));
@@ -54,6 +55,10 @@ void ofApp::setup(){
     
     gui.setup(parameters);
     gui.minimizeAll();
+    
+    //for testing so I don't have to keep taking videos
+    recordedVideoPlayback.loadMovie("test_video.mov");
+    recordedVideoPlayback.play();
 }
 
 void ofApp::exit() {
@@ -82,6 +87,8 @@ void ofApp::update(){
     if(recordedVideoPlayback.isLoaded()){
         recordedVideoPlayback.update();
     }
+    
+    time += 0.1;
 }
 
 //--------------------------------------------------------------
@@ -109,12 +116,30 @@ void ofApp::draw(){
     
     //recorded video
     if(recordedVideoPlayback.isLoaded()){
+        
         recordFbo.begin();
+//        recordedVideoPlayback.getTextureReference().bind();
         badTvShader.begin();
-        //        staticShader.begin();
-        recordedVideoPlayback.draw(0, 0);
+        badTvShader.setUniformTexture("tDiffuse", recordedVideoPlayback.getTextureReference(), 1);
+        badTvShader.setUniform1f("time", time);
+        badTvShader.setUniform1f("distortion", thickDistort);
+        badTvShader.setUniform1f("distortion2", fineDistort);
+        badTvShader.setUniform1f("speed", rollSpeed);
+        
+        ofMesh quad;
+        quad.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
+        quad.addVertex(ofPoint(0, recordFbo.getWidth(), 0));
+        quad.addTexCoord(ofPoint(0, recordFbo.getWidth(), 0));
+        quad.addVertex(ofPoint(0, 0, 0));
+        quad.addTexCoord(ofPoint(0, 0, 0));
+        quad.addVertex(ofPoint(recordFbo.getWidth(), recordFbo.getHeight(), 0));
+        quad.addTexCoord(ofPoint(recordFbo.getWidth(), recordFbo.getHeight(), 0));
+        quad.addVertex(ofPoint(recordFbo.getWidth(), 0, 0));
+        quad.addTexCoord(ofPoint(recordFbo.getWidth(), 0, 0));
+        quad.draw();
+        
+//        recordedVideoPlayback.draw(0, 0);
         badTvShader.end();
-        //        staticShader.end();
         recordFbo.end();
         recordFbo.draw(640, 0);
         

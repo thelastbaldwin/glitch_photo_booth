@@ -37,7 +37,7 @@
 
 #version 410
 
-uniform sampler2D tDiffuse;
+uniform sampler2DRect tDiffuse;
 uniform float time;
 uniform float distortion;
 uniform float distortion2;

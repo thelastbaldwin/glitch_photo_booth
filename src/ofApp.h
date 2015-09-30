@@ -31,6 +31,7 @@ public:
     ofParameter<float> fineDistort;
     ofParameter<float> distortSpeed;
     ofParameter<float> rollSpeed;
+    float time;
     
     ofParameterGroup RGBShift;
     ofParameter<float> rgbAmount;
