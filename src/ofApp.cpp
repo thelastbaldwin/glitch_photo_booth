@@ -2,8 +2,7 @@
 
 //--------------------------------------------------------------
 void ofApp::setup(){
-    sampleRate = 44100;
-    channels = 2;
+    ofDisableArbTex();
     
     ofSetFrameRate(60);
     ofSetLogLevel(OF_LOG_VERBOSE);
@@ -124,7 +123,8 @@ void ofApp::draw(){
         badTvShader.setUniform1f("time", time);
         badTvShader.setUniform1f("distortion", thickDistort);
         badTvShader.setUniform1f("distortion2", fineDistort);
-        badTvShader.setUniform1f("speed", rollSpeed);
+        badTvShader.setUniform1f("speed", distortSpeed);
+        badTvShader.setUniform1f("rollSpeed", rollSpeed);
         
         ofMesh quad;
         quad.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);

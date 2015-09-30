@@ -37,12 +37,13 @@
 
 #version 410
 
-uniform sampler2DRect tDiffuse;
+uniform sampler2D tDiffuse;
 uniform float time;
 uniform float distortion;
 uniform float distortion2;
 uniform float speed;
 uniform float rollSpeed;
+
 in vec2 vUv;
 
 out vec4 outputColor;
@@ -95,6 +96,9 @@ void main() {
   float offset = snoise(vec2(yt*3.0,0.0))*0.2;
   offset = pow( offset*distortion,3.0)/distortion;
   offset += snoise(vec2(yt*50.0,0.0))*distortion2*0.001;
-  // gl_FragColor = texture2D(tDiffuse,  vec2(fract(p.x + offset),fract(p.y-time*rollSpeed) ));
-  outputColor = texture(tDiffuse,  vec2(fract(p.x + offset),fract(p.y-time*rollSpeed) ));
+  // gl_FragColor = texture2D(tDiffuse,  vec2(fract(p.x + offset),fract(p.y-time*rollSpeed) )); //THREE.js version
+  outputColor = texture(tDiffuse,  vec2(fract(p.x + offset),fract(p.y-time*rollSpeed)));
+  // outputColor = texture(tDiffuse,  vec2(p.x + offset,p.y-time*rollSpeed));
+  // outputColor = vec4(vUv.x, 0.0, 0.0, 1.0);
+  // outputColor = texture(tDiffuse, p);
 }

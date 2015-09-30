@@ -50,8 +50,6 @@ public:
     ofxVideoRecorder    vidRecorder;
 
     bool bRecording;
-    int sampleRate;
-    int channels;
     string fileName;
     string fileExt;
     string lastFile;
