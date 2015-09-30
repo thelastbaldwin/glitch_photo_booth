@@ -99,6 +99,6 @@ void main() {
   // gl_FragColor = texture2D(tDiffuse,  vec2(fract(p.x + offset),fract(p.y-time*rollSpeed) )); //THREE.js version
   outputColor = texture(tDiffuse,  vec2(fract(p.x + offset),fract(p.y-time*rollSpeed)));
   // outputColor = texture(tDiffuse,  vec2(p.x + offset,p.y-time*rollSpeed));
-  // outputColor = vec4(vUv.x, 0.0, 0.0, 1.0);
+  // outputColor = vec4(p.x, 0.0, 0.0, 1.0);
   // outputColor = texture(tDiffuse, p);
 }

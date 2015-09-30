@@ -21,7 +21,9 @@ public:
     void windowResized(int w, int h);
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
+    void clearFbo(ofFbo& fbo);
     
+    ofMesh quad;
     
     bool hideGui;
     ofxPanel gui;
@@ -54,10 +56,13 @@ public:
     string fileExt;
     string lastFile;
     
-    ofFbo recordFbo;
+    ofFbo badTVFbo;
+    ofFbo rgbShiftFbo;
+    ofFbo staticFbo;
+    ofFbo filmFbo;
     ofPixels recordPixels;
     
-    ofShader badTvShader, staticShader;
+    ofShader badTvShader, rgbShiftShader, filmShader, staticShader;
     
     ofVideoPlayer recordedVideoPlayback;
 };

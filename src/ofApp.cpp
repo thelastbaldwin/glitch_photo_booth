@@ -22,8 +22,27 @@ void ofApp::setup(){
     ofEnableAlphaBlending();
     
     //shader stuff
-    recordFbo.allocate(vidGrabber.width, vidGrabber.height);
+    filmFbo.allocate(vidGrabber.width, vidGrabber.height);
+    badTVFbo.allocate(vidGrabber.width, vidGrabber.height);
+    rgbShiftFbo.allocate(vidGrabber.width, vidGrabber.height);
+    staticFbo.allocate(vidGrabber.width, vidGrabber.height);
+    clearFbo(badTVFbo);
+    clearFbo(rgbShiftFbo);
+    clearFbo(staticFbo);
+    
+    quad.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
+    quad.addVertex(ofPoint(0, vidGrabber.width, 0));
+    quad.addTexCoord(ofPoint(0, vidGrabber.width, 0));
+    quad.addVertex(ofPoint(0, 0, 0));
+    quad.addTexCoord(ofPoint(0, 0, 0));
+    quad.addVertex(ofPoint(vidGrabber.width, vidGrabber.height, 0));
+    quad.addTexCoord(ofPoint(vidGrabber.width, vidGrabber.height, 0));
+    quad.addVertex(ofPoint(vidGrabber.width, 0, 0));
+    quad.addTexCoord(ofPoint(vidGrabber.width, 0, 0));
+    
+    filmShader.load("shaders/passthrough_vert.c", "shaders/film_shader.c");
     badTvShader.load("shaders/passthrough_vert.c", "shaders/badtv_frag.c");
+    rgbShiftShader.load("shaders/passthrough_vert.c", "shaders/rgb_shift_frag.c");
     staticShader.load("shaders/passthrough_vert.c", "shaders/static_frag.c");
     
     //gui stuff
@@ -72,6 +91,8 @@ void ofApp::update(){
         if (!success) {
             ofLogWarning("This frame was not added!");
         }
+        
+        //do fbo stack stuff here?
     }
     
     // Check if the video recorder encountered any error while writing video frame or audio smaples.
@@ -116,32 +137,59 @@ void ofApp::draw(){
     //recorded video
     if(recordedVideoPlayback.isLoaded()){
         
-        recordFbo.begin();
-//        recordedVideoPlayback.getTextureReference().bind();
+        filmFbo.begin();
+        filmShader.begin();
+        filmShader.setUniformTexture("tDiffuse", recordedVideoPlayback.getTextureReference(), 1);
+        filmShader.setUniform1f("width", vidGrabber.width);
+        filmShader.setUniform1f("height", vidGrabber.height);
+        filmShader.setUniform1f("time", time);
+        filmShader.setUniform1i("grayscale", 0);
+        filmShader.setUniform1f("nIntensity", nIntensity);
+        filmShader.setUniform1f("sIntensity", sIntensity);
+        filmShader.setUniform1f("sCount", count);
+        quad.draw();
+        filmShader.end();
+        filmFbo.end();
+        
+        badTVFbo.begin();
         badTvShader.begin();
-        badTvShader.setUniformTexture("tDiffuse", recordedVideoPlayback.getTextureReference(), 1);
+        badTvShader.setUniformTexture("tDiffuse", filmFbo.getTextureReference(), 1);
+        badTvShader.setUniform1f("width", vidGrabber.width);
+        badTvShader.setUniform1f("height", vidGrabber.height);
         badTvShader.setUniform1f("time", time);
         badTvShader.setUniform1f("distortion", thickDistort);
         badTvShader.setUniform1f("distortion2", fineDistort);
         badTvShader.setUniform1f("speed", distortSpeed);
         badTvShader.setUniform1f("rollSpeed", rollSpeed);
-        
-        ofMesh quad;
-        quad.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
-        quad.addVertex(ofPoint(0, recordFbo.getWidth(), 0));
-        quad.addTexCoord(ofPoint(0, recordFbo.getWidth(), 0));
-        quad.addVertex(ofPoint(0, 0, 0));
-        quad.addTexCoord(ofPoint(0, 0, 0));
-        quad.addVertex(ofPoint(recordFbo.getWidth(), recordFbo.getHeight(), 0));
-        quad.addTexCoord(ofPoint(recordFbo.getWidth(), recordFbo.getHeight(), 0));
-        quad.addVertex(ofPoint(recordFbo.getWidth(), 0, 0));
-        quad.addTexCoord(ofPoint(recordFbo.getWidth(), 0, 0));
         quad.draw();
-        
-//        recordedVideoPlayback.draw(0, 0);
         badTvShader.end();
-        recordFbo.end();
-        recordFbo.draw(640, 0);
+        badTVFbo.end();
+        
+        rgbShiftFbo.begin();
+        rgbShiftShader.begin();
+        rgbShiftShader.setUniformTexture("tDiffuse", badTVFbo.getTextureReference(), 1);
+        rgbShiftShader.setUniform1f("width", vidGrabber.width);
+        rgbShiftShader.setUniform1f("height", vidGrabber.height);
+        rgbShiftShader.setUniform1f("amount", rgbAmount);
+        rgbShiftShader.setUniform1f("angle", angle);
+        quad.draw();
+        rgbShiftShader.end();
+        rgbShiftFbo.end();
+    
+        staticFbo.begin();
+        staticShader.begin();
+        staticShader.setUniformTexture("tDiffuse", rgbShiftFbo.getTextureReference(), 1);
+        staticShader.setUniform1f("width", vidGrabber.width);
+        staticShader.setUniform1f("height", vidGrabber.height);
+        staticShader.setUniform1f("time", time);
+        staticShader.setUniform1f("amount", staticAmount);
+        staticShader.setUniform1f("size", size);
+        quad.draw();
+        staticShader.end();
+        staticFbo.end();
+        
+        //final output
+        staticFbo.draw(640, 0);
         
     }
     
@@ -151,6 +199,13 @@ void ofApp::draw(){
     }else{
         ofHideCursor();
     }
+}
+
+//--------------------------------------------------------------
+void ofApp::clearFbo(ofFbo &fbo){
+    fbo.begin();
+    ofClear(255,255,255, 0);
+    fbo.end();
 }
 
 
