@@ -26,10 +26,10 @@ void ofApp::setup(){
     ofEnableAlphaBlending();
     
     //shader stuff
-    filmFbo.allocate(vidGrabber.width, vidGrabber.height);
-    badTVFbo.allocate(vidGrabber.width, vidGrabber.height);
-    rgbShiftFbo.allocate(vidGrabber.width, vidGrabber.height);
-    staticFbo.allocate(vidGrabber.width, vidGrabber.height);
+    filmFbo.allocate(vidGrabber.getWidth(), vidGrabber.getHeight());
+    badTVFbo.allocate(vidGrabber.getWidth(), vidGrabber.getHeight());
+    rgbShiftFbo.allocate(vidGrabber.getWidth(), vidGrabber.getHeight());
+    staticFbo.allocate(vidGrabber.getWidth(), vidGrabber.getHeight());
     clearFbo(filmFbo);
     clearFbo(badTVFbo);
     clearFbo(rgbShiftFbo);
@@ -37,14 +37,14 @@ void ofApp::setup(){
     
     //set up basic quad
     quad.setMode(OF_PRIMITIVE_TRIANGLE_STRIP);
-    quad.addVertex(ofPoint(0, vidGrabber.width, 0));
-    quad.addTexCoord(ofPoint(0, vidGrabber.width, 0));
+    quad.addVertex(ofPoint(0, vidGrabber.getWidth(), 0));
+    quad.addTexCoord(ofPoint(0, vidGrabber.getWidth(), 0));
     quad.addVertex(ofPoint(0, 0, 0));
     quad.addTexCoord(ofPoint(0, 0, 0));
-    quad.addVertex(ofPoint(vidGrabber.width, vidGrabber.height, 0));
-    quad.addTexCoord(ofPoint(vidGrabber.width, vidGrabber.height, 0));
-    quad.addVertex(ofPoint(vidGrabber.width, 0, 0));
-    quad.addTexCoord(ofPoint(vidGrabber.width, 0, 0));
+    quad.addVertex(ofPoint(vidGrabber.getWidth(), vidGrabber.getHeight(), 0));
+    quad.addTexCoord(ofPoint(vidGrabber.getWidth(), vidGrabber.getHeight(), 0));
+    quad.addVertex(ofPoint(vidGrabber.getWidth(), 0, 0));
+    quad.addTexCoord(ofPoint(vidGrabber.getWidth(), 0, 0));
     
     filmShader.load("shaders/passthrough_vert.c", "shaders/film_shader.c");
     badTvShader.load("shaders/passthrough_vert.c", "shaders/badtv_frag.c");
@@ -81,11 +81,11 @@ void ofApp::setup(){
     gui.minimizeAll();
     
     //for testing so I don't have to keep taking videos
-    recordedVideoPlayback.loadMovie("test_video.mov");
-    recordedVideoPlayback.play();
+//    recordedVideoPlayback.load("test_video.mov");
+//    recordedVideoPlayback.play();
     
-    recordPixels.allocate(vidGrabber.width, vidGrabber.height, OF_IMAGE_COLOR);
-    recordImage.allocate(vidGrabber.width, vidGrabber.height, OF_IMAGE_COLOR);
+    recordPixels.allocate(vidGrabber.getWidth(), vidGrabber.getHeight(), OF_IMAGE_COLOR);
+    recordImage.allocate(vidGrabber.getWidth(), vidGrabber.getHeight(), OF_IMAGE_COLOR);
 }
 
 void ofApp::exit() {
@@ -99,19 +99,19 @@ void ofApp::update(){
     vidGrabber.update();
     if(vidGrabber.isFrameNew() && bRecording){
 
-        if (!vidRecorder.addFrame(vidGrabber.getPixelsRef())){
+        if (!vidRecorder.addFrame(vidGrabber.getPixels())){
             ofLogWarning("This frame was not added to the main recorder!");
         }
         
-        if( !vidRecorderMP4.addFrame(vidGrabber.getPixelsRef())){
+        if( !vidRecorderMP4.addFrame(vidGrabber.getPixels())){
             ofLogWarning("This frame was not added to the mp4 recorder!");
         }
         
         filmFbo.begin();
         filmShader.begin();
-        filmShader.setUniformTexture("tDiffuse", vidGrabber.getTextureReference(), 1);
-        filmShader.setUniform1f("width", vidGrabber.width);
-        filmShader.setUniform1f("height", vidGrabber.height);
+        filmShader.setUniformTexture("tDiffuse", vidGrabber.getTexture(), 1);
+        filmShader.setUniform1f("width", vidGrabber.getWidth());
+        filmShader.setUniform1f("height", vidGrabber.getHeight());
         filmShader.setUniform1f("time", time);
         filmShader.setUniform1i("grayscale", 0);
         filmShader.setUniform1f("nIntensity", nIntensity);
@@ -123,9 +123,9 @@ void ofApp::update(){
         
         badTVFbo.begin();
         badTvShader.begin();
-        badTvShader.setUniformTexture("tDiffuse", filmFbo.getTextureReference(), 1);
-        badTvShader.setUniform1f("width", vidGrabber.width);
-        badTvShader.setUniform1f("height", vidGrabber.height);
+        badTvShader.setUniformTexture("tDiffuse", filmFbo.getTexture(), 1);
+        badTvShader.setUniform1f("width", vidGrabber.getWidth());
+        badTvShader.setUniform1f("height", vidGrabber.getHeight());
         badTvShader.setUniform1f("time", time);
         badTvShader.setUniform1f("distortion", thickDistort);
         badTvShader.setUniform1f("distortion2", fineDistort);
@@ -137,9 +137,9 @@ void ofApp::update(){
         
         rgbShiftFbo.begin();
         rgbShiftShader.begin();
-        rgbShiftShader.setUniformTexture("tDiffuse", badTVFbo.getTextureReference(), 1);
-        rgbShiftShader.setUniform1f("width", vidGrabber.width);
-        rgbShiftShader.setUniform1f("height", vidGrabber.height);
+        rgbShiftShader.setUniformTexture("tDiffuse", badTVFbo.getTexture(), 1);
+        rgbShiftShader.setUniform1f("width", vidGrabber.getWidth());
+        rgbShiftShader.setUniform1f("height", vidGrabber.getHeight());
         rgbShiftShader.setUniform1f("amount", rgbAmount);
         rgbShiftShader.setUniform1f("angle", angle);
         quad.draw();
@@ -148,9 +148,9 @@ void ofApp::update(){
         
         staticFbo.begin();
         staticShader.begin();
-        staticShader.setUniformTexture("tDiffuse", rgbShiftFbo.getTextureReference(), 1);
-        staticShader.setUniform1f("width", vidGrabber.width);
-        staticShader.setUniform1f("height", vidGrabber.height);
+        staticShader.setUniformTexture("tDiffuse", rgbShiftFbo.getTexture(), 1);
+        staticShader.setUniform1f("width", vidGrabber.getWidth());
+        staticShader.setUniform1f("height", vidGrabber.getHeight());
         staticShader.setUniform1f("time", time);
         staticShader.setUniform1f("amount", staticAmount);
         staticShader.setUniform1f("size", size);
@@ -198,14 +198,14 @@ void ofApp::draw(){
     << (bRecording?"close current video file: c":"") << endl;
     
     ofSetColor(0,0,0,100);
-    ofRect(0, 0, 260, 75);
+    ofRectangle(0, 0, 260, 75);
     ofSetColor(255, 255, 255);
     ofDrawBitmapString(ss.str(),15,15);
     
     if(bRecording){
         ofPushStyle();
         ofSetColor(255, 0, 0);
-        ofCircle(ofGetWidth() - 20, 20, 5);
+        ofDrawCircle(ofGetWidth() - 20, 20, 5);
         ofPopStyle();
     }
     
@@ -214,9 +214,9 @@ void ofApp::draw(){
         
         filmFbo.begin();
         filmShader.begin();
-        filmShader.setUniformTexture("tDiffuse", recordedVideoPlayback.getTextureReference(), 1);
-        filmShader.setUniform1f("width", vidGrabber.width);
-        filmShader.setUniform1f("height", vidGrabber.height);
+        filmShader.setUniformTexture("tDiffuse", recordedVideoPlayback.getTexture(), 1);
+        filmShader.setUniform1f("width", vidGrabber.getWidth());
+        filmShader.setUniform1f("height", vidGrabber.getHeight());
         filmShader.setUniform1f("time", time);
         filmShader.setUniform1i("grayscale", 0);
         filmShader.setUniform1f("nIntensity", nIntensity);
@@ -228,9 +228,9 @@ void ofApp::draw(){
         
         badTVFbo.begin();
         badTvShader.begin();
-        badTvShader.setUniformTexture("tDiffuse", filmFbo.getTextureReference(), 1);
-        badTvShader.setUniform1f("width", vidGrabber.width);
-        badTvShader.setUniform1f("height", vidGrabber.height);
+        badTvShader.setUniformTexture("tDiffuse", filmFbo.getTexture(), 1);
+        badTvShader.setUniform1f("width", vidGrabber.getWidth());
+        badTvShader.setUniform1f("height", vidGrabber.getHeight());
         badTvShader.setUniform1f("time", time);
         badTvShader.setUniform1f("distortion", thickDistort);
         badTvShader.setUniform1f("distortion2", fineDistort);
@@ -242,9 +242,9 @@ void ofApp::draw(){
         
         rgbShiftFbo.begin();
         rgbShiftShader.begin();
-        rgbShiftShader.setUniformTexture("tDiffuse", badTVFbo.getTextureReference(), 1);
-        rgbShiftShader.setUniform1f("width", vidGrabber.width);
-        rgbShiftShader.setUniform1f("height", vidGrabber.height);
+        rgbShiftShader.setUniformTexture("tDiffuse", badTVFbo.getTexture(), 1);
+        rgbShiftShader.setUniform1f("width", vidGrabber.getWidth());
+        rgbShiftShader.setUniform1f("height", vidGrabber.getHeight());
         rgbShiftShader.setUniform1f("amount", rgbAmount);
         rgbShiftShader.setUniform1f("angle", angle);
         quad.draw();
@@ -253,9 +253,9 @@ void ofApp::draw(){
     
         staticFbo.begin();
         staticShader.begin();
-        staticShader.setUniformTexture("tDiffuse", rgbShiftFbo.getTextureReference(), 1);
-        staticShader.setUniform1f("width", vidGrabber.width);
-        staticShader.setUniform1f("height", vidGrabber.height);
+        staticShader.setUniformTexture("tDiffuse", rgbShiftFbo.getTexture(), 1);
+        staticShader.setUniform1f("width", vidGrabber.getWidth());
+        staticShader.setUniform1f("height", vidGrabber.getHeight());
         staticShader.setUniform1f("time", time);
         staticShader.setUniform1f("amount", staticAmount);
         staticShader.setUniform1f("size", size);
@@ -321,7 +321,7 @@ void ofApp::keyReleased(int key){
         ofSleepMillis(750);
         
         //try and load the video
-        recordedVideoPlayback.loadMovie(lastFile);
+        recordedVideoPlayback.load(lastFile);
         recordedVideoPlayback.play();
         
         //signal via osc that we've saved a new set of videos
