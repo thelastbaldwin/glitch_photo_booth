@@ -26,10 +26,10 @@ void ofApp::setup(){
     ofEnableAlphaBlending();
     
     //shader stuff
-    filmFbo.allocate(vidGrabber.width, vidGrabber.height);
-    badTVFbo.allocate(vidGrabber.width, vidGrabber.height);
-    rgbShiftFbo.allocate(vidGrabber.width, vidGrabber.height);
-    staticFbo.allocate(vidGrabber.width, vidGrabber.height);
+    filmFbo.allocate(vidGrabber.width, vidGrabber.height, GL_RGB);
+    badTVFbo.allocate(vidGrabber.width, vidGrabber.height, GL_RGB);
+    rgbShiftFbo.allocate(vidGrabber.width, vidGrabber.height, GL_RGB);
+    staticFbo.allocate(vidGrabber.width, vidGrabber.height, GL_RGB);
     clearFbo(filmFbo);
     clearFbo(badTVFbo);
     clearFbo(rgbShiftFbo);
@@ -107,9 +107,12 @@ void ofApp::update(){
             ofLogWarning("This frame was not added to the mp4 recorder!");
         }
         
+        ofTexture tex;
+        tex.loadData(vidGrabber.getPixels(), vidGrabber.getWidth(), vidGrabber.getHeight(), GL_RGB);
+        
         filmFbo.begin();
         filmShader.begin();
-        filmShader.setUniformTexture("tDiffuse", vidGrabber.getTextureReference(), 1);
+        filmShader.setUniformTexture("tDiffuse", tex, 1);
         filmShader.setUniform1f("width", vidGrabber.width);
         filmShader.setUniform1f("height", vidGrabber.height);
         filmShader.setUniform1f("time", time);
@@ -160,10 +163,8 @@ void ofApp::update(){
         
         ofPixels px;
         staticFbo.readToPixels(px);
-        ofImage img;
-        img.setFromPixels(px);
         
-        if (!vidRecorderMP4Distort.addFrame(img)){
+        if (!vidRecorderMP4Distort.addFrame(px)){
             ofLogWarning("This frame was not added to the distorted mp4 recorder!");
         }
     }
