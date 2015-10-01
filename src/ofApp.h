@@ -22,6 +22,9 @@ public:
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
     void clearFbo(ofFbo& fbo);
+    void startRecording();
+    void stopRecording();
+    string generateTimeStamp(unsigned long long time);
     
     ofMesh quad;
     
@@ -54,6 +57,7 @@ public:
     ofxVideoRecorder    vidRecorderMP4Distort;
 
     bool bRecording;
+    long long mark;
     string fileName;
     string fileExt;
     string lastFile;
@@ -62,8 +66,6 @@ public:
     ofFbo rgbShiftFbo;
     ofFbo staticFbo;
     ofFbo filmFbo;
-    ofPixels recordPixels;
-    ofImage recordImage;
     
     ofShader badTvShader, rgbShiftShader, filmShader, staticShader;
     

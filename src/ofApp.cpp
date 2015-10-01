@@ -5,7 +5,7 @@ void ofApp::setup(){
     ofDisableArbTex();
     
     ofSetFrameRate(60);
-    ofSetLogLevel(OF_LOG_VERBOSE);
+//    ofSetLogLevel(OF_LOG_VERBOSE);
     vidGrabber.setDesiredFrameRate(30);
     vidGrabber.initGrabber(640, 480);
     
@@ -84,8 +84,6 @@ void ofApp::setup(){
     recordedVideoPlayback.loadMovie("test_video.mov");
     recordedVideoPlayback.play();
     
-    recordPixels.allocate(vidGrabber.width, vidGrabber.height, OF_IMAGE_COLOR);
-    recordImage.allocate(vidGrabber.width, vidGrabber.height, OF_IMAGE_COLOR);
 }
 
 void ofApp::exit() {
@@ -96,6 +94,14 @@ void ofApp::exit() {
 
 //--------------------------------------------------------------
 void ofApp::update(){
+    if(bRecording){
+        long long now = ofGetElapsedTimeMillis();
+        if(mark - now <= 0){
+            stopRecording();
+            return;
+        }
+    }
+    
     vidGrabber.update();
     if(vidGrabber.isFrameNew() && bRecording){
 
@@ -289,43 +295,63 @@ void ofApp::keyPressed(int key){
 }
 
 //--------------------------------------------------------------
+void ofApp::startRecording(){
+    bRecording = !bRecording;
+    const unsigned long long DURATION = 5000; //5 seconds
+    mark = ofGetElapsedTimeMillis() + DURATION;
+    if(bRecording && !vidRecorder.isInitialized()) {
+        lastFile = fileName+ofGetTimestampString()+fileExt;
+        vidRecorder.setupCustomOutput(vidGrabber.getWidth(), vidGrabber.getHeight(), 30, 0, 0, "-vcodec libx264 -b 800k -pix_fmt yuv420p -f mov " + ofFilePath::getAbsolutePath(lastFile), true, false); //the last booleans sync the video timing to the main thread
+        vidRecorderMP4.setup(fileName+ofGetTimestampString()+".mp4", vidGrabber.getWidth(), vidGrabber.getHeight(), 30, true, false); // no audio
+        vidRecorderMP4Distort.setup(fileName+ofGetTimestampString()+"_distorted.mp4", vidGrabber.getWidth(), vidGrabber.getHeight(), 30, true, false); // no audio
+        
+        vidRecorder.start();
+        vidRecorderMP4.start();
+        vidRecorderMP4Distort.start();
+    }
+//    else if(!bRecording && vidRecorder.isInitialized()) {
+//        vidRecorder.setPaused(true);
+//    }
+//    else if(bRecording && vidRecorder.isInitialized()) {
+//        vidRecorder.setPaused(false);
+//    }
+}
+
+//--------------------------------------------------------------
+void ofApp::stopRecording(){
+    bRecording = false;
+    vidRecorder.close();
+    vidRecorderMP4.close();
+    vidRecorderMP4Distort.close();
+    
+    //race condition!
+    //TODO: Find the lowest safe value
+    ofSleepMillis(750);
+    
+    //try and load the video
+    recordedVideoPlayback.loadMovie(lastFile);
+    recordedVideoPlayback.play();
+    
+    //TODO:signal via osc that we've saved a new set of videos
+}
+
+string ofApp::generateTimeStamp(unsigned long long time){
+    stringstream ss;
+    //minutes
+    ss << "00:" <<"0" << time / 1000.0 << ":" << time/100.0 << endl;
+    
+    return ss.str();
+}
+
+//--------------------------------------------------------------
 void ofApp::keyReleased(int key){
     
     if(key=='r'){
         //TODO: remove stop/start functionality
-        //TODO: move this and stop into methods. maintain keyboard bindings
-        bRecording = !bRecording;
-        if(bRecording && !vidRecorder.isInitialized()) {
-            lastFile = fileName+ofGetTimestampString()+fileExt;
-            vidRecorder.setupCustomOutput(vidGrabber.getWidth(), vidGrabber.getHeight(), 30, 0, 0, "-vcodec libx264 -b 800k -pix_fmt yuv420p -f mov " + ofFilePath::getAbsolutePath(lastFile), true, false); //the last booleans sync the video timing to the main thread
-            vidRecorderMP4.setup(fileName+ofGetTimestampString()+".mp4", vidGrabber.getWidth(), vidGrabber.getHeight(), 30, true, false); // no audio
-            vidRecorderMP4Distort.setup(fileName+ofGetTimestampString()+"_distorted.mp4", vidGrabber.getWidth(), vidGrabber.getHeight(), 30, true, false); // no audio
-            
-            vidRecorder.start();
-            vidRecorderMP4.start();
-            vidRecorderMP4Distort.start();
-        }
-        else if(!bRecording && vidRecorder.isInitialized()) {
-            vidRecorder.setPaused(true);
-        }
-        else if(bRecording && vidRecorder.isInitialized()) {
-            vidRecorder.setPaused(false);
-        }
+        startRecording();
     }
     if(key=='c'){
-        bRecording = false;
-        vidRecorder.close();
-        vidRecorderMP4.close();
-        vidRecorderMP4Distort.close();
-        
-        //race condition!
-        ofSleepMillis(750);
-        
-        //try and load the video
-        recordedVideoPlayback.loadMovie(lastFile);
-        recordedVideoPlayback.play();
-        
-        //signal via osc that we've saved a new set of videos
+        stopRecording();
     }if(key=='q'){
         ofExit();
     }
