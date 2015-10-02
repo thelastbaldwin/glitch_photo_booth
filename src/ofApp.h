@@ -22,9 +22,13 @@ public:
     void dragEvent(ofDragInfo dragInfo);
     void gotMessage(ofMessage msg);
     void clearFbo(ofFbo& fbo);
-    void startRecording();
+    void startRecording(const unsigned long long duration);
     void stopRecording();
     string generateTimeStamp(unsigned long long time);
+    void drawButton(const ofVec2f& center);
+    const int buttonSize = 50;
+    const int DURATION = 6000;
+    ofVec2f buttonCenter;
     
     ofMesh quad;
     

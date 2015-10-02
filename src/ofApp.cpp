@@ -5,12 +5,10 @@ void ofApp::setup(){
     ofDisableArbTex();
     
     ofSetFrameRate(60);
-//    ofSetLogLevel(OF_LOG_VERBOSE);
     vidGrabber.setDesiredFrameRate(30);
     vidGrabber.initGrabber(640, 480);
     
     fileName = "testMovie";
-    fileExt = ".mp4"; // ffmpeg uses the extension to determine the container type. run 'ffmpeg -formats' to see supported formats
     
     // override the default codecs if you like
     // run 'ffmpeg -codecs' to find out what your implementation supports (or -formats on some older versions)
@@ -130,13 +128,14 @@ void ofApp::draw(){
     ofSetColor(255, 255, 255);
 
     //reference points
-    ofPoint videoTopLeft((ofGetWidth() - staticFbo.getWidth())/2,(ofGetHeight() - staticFbo.getHeight())/2);
+    ofPoint videoTopLeft((ofGetWidth() - staticFbo.getWidth())/2, 0 );
     ofPoint videoTopRight = videoTopLeft + ofPoint(staticFbo.getWidth(), 0);
     ofPoint videoBottomLeft = videoTopLeft + ofPoint(0, staticFbo.getHeight());
     ofPoint videoBottomRight = videoTopLeft + ofPoint(staticFbo.getWidth(), staticFbo.getHeight());
     
     
     //FBO sequence
+    // Output to texture to make sure that FBO and texture color profiles match up
     ofTexture tex;
     tex.loadData(vidGrabber.getPixels(), vidGrabber.getWidth(), vidGrabber.getHeight(), GL_RGB);
     
@@ -191,7 +190,6 @@ void ofApp::draw(){
     staticShader.end();
     staticFbo.end();
     
-    //final output
     staticFbo.draw(videoTopLeft);
     
     //corners
@@ -218,19 +216,18 @@ void ofApp::draw(){
         openSansLarge.drawString("REC", videoTopRight.x - margin * 5 - 60, videoTopRight.y + margin * 4 + 10);
         ofCircle(videoTopRight.x - margin * 4, videoTopRight.y + margin * 4, 10);
         
-        if(mark - ofGetElapsedTimeMillis() > 0){
-            string timestamp = generateTimeStamp(mark - ofGetElapsedTimeMillis());
-            openSansLarge.drawString(timestamp, videoBottomLeft.x + staticFbo.getWidth()/2 - 60, videoBottomLeft.y - margin);
-        }
+        string timestamp = generateTimeStamp(mark - ofGetElapsedTimeMillis());
+        openSansLarge.drawString(timestamp, videoBottomLeft.x + staticFbo.getWidth()/2 - 60, videoBottomLeft.y - margin);
         ofPopStyle();
-        
     }
     
+    drawButton(ofVec2f(videoBottomRight.x - 50, videoBottomRight.y + 60));
+    
     if( hideGui ){
-        ofShowCursor();
+//        ofShowCursor();
         gui.draw();
     }else{
-        ofHideCursor();
+//        ofHideCursor();
     }
 }
 
@@ -247,10 +244,9 @@ void ofApp::keyPressed(int key){
 }
 
 //--------------------------------------------------------------
-void ofApp::startRecording(){
+void ofApp::startRecording(const unsigned long long duration){
     bRecording = !bRecording;
-    const unsigned long long DURATION = 5000; //5 seconds
-    mark = ofGetElapsedTimeMillis() + DURATION;
+    mark = ofGetElapsedTimeMillis() + duration;
     if(bRecording && !vidRecorderMP4.isInitialized() && !vidRecorderMP4Distort.isInitialized()) {
         lastFile = fileName+ofGetTimestampString();
         vidRecorderMP4.setupCustomOutput(vidGrabber.getWidth(), vidGrabber.getHeight(), 30, 0, 0, "-vcodec libx264 -b 1000k -pix_fmt yuv420p -f mp4 " + ofFilePath::getAbsolutePath(lastFile + ".mp4"), true, false); //the last booleans sync the video timing to the main thread
@@ -282,12 +278,22 @@ string ofApp::generateTimeStamp(unsigned long long time){
 }
 
 //--------------------------------------------------------------
+void ofApp::drawButton(const ofVec2f& center){
+    ofPushStyle();
+    ofSetColor(255, 0, 0);
+    ofCircle(center, buttonSize);
+    ofSetColor(255);
+    openSansRegular.drawString("Record", center.x - 39, center.y + 7);
+    ofPopStyle();
+}
+
+//--------------------------------------------------------------
 void ofApp::keyReleased(int key){
     
     if(key=='r'){
         //TODO: remove stop/start functionality
         if(!bRecording){
-            startRecording();
+            startRecording(DURATION);
         }
     }
     if(key=='c'){
@@ -312,12 +318,17 @@ void ofApp::mouseDragged(int x, int y, int button){
 
 //--------------------------------------------------------------
 void ofApp::mousePressed(int x, int y, int button){
-    
+   
 }
 
 //--------------------------------------------------------------
 void ofApp::mouseReleased(int x, int y, int button){
+    ofVec2f p1(x, y);
+    ofVec2f buttonCenter(670, 540); //TODO: make the button center and important points a struct
     
+    if(p1.distance(buttonCenter) < buttonSize){
+        startRecording(DURATION);
+    }
 }
 
 //--------------------------------------------------------------
