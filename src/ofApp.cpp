@@ -78,6 +78,10 @@ void ofApp::setup(){
     
     gui.setup(parameters);
     gui.minimizeAll();
+    
+    //set up font
+    openSansLarge.loadFont("OpenSans-Regular.ttf", 22);
+    openSansRegular.loadFont("OpenSans-Regular.ttf", 18);
 }
 
 void ofApp::exit() {
@@ -124,32 +128,13 @@ void ofApp::update(){
 void ofApp::draw(){
     ofBackground(0);
     ofSetColor(255, 255, 255);
-//    
-//    stringstream ss;
-//    ss << "video queue size: " << vidRecorder.getVideoQueueSize() << endl
-//    << "FPS: " << ofGetFrameRate() << endl
-//    << (bRecording?"pause":"start") << " recording: r" << endl
-//    << (bRecording?"close current video file: c":"") << endl;
-//    
+
     //reference points
     ofPoint videoTopLeft((ofGetWidth() - staticFbo.getWidth())/2,(ofGetHeight() - staticFbo.getHeight())/2);
     ofPoint videoTopRight = videoTopLeft + ofPoint(staticFbo.getWidth(), 0);
     ofPoint videoBottomLeft = videoTopLeft + ofPoint(0, staticFbo.getHeight());
     ofPoint videoBottomRight = videoTopLeft + ofPoint(staticFbo.getWidth(), staticFbo.getHeight());
     
-    
-//    ofSetColor(0,0,0,100);
-//    ofRect(0, 0, 260, 75);
-//    ofSetColor(255, 255, 255);
-//    ofDrawBitmapString(ss.str(),15,15);
-    
-    
-    if(bRecording){
-        ofPushStyle();
-        ofSetColor(255, 0, 0);
-        ofCircle(ofGetWidth() - 20, 20, 5);
-        ofPopStyle();
-    }
     
     //FBO sequence
     ofTexture tex;
@@ -211,7 +196,7 @@ void ofApp::draw(){
     
     //corners
     float margin = 10.0;
-    float shortEdge = 10.0;
+    float shortEdge = 3.0;
     float longEdge = 50.0;
     //top left
     ofRect(videoTopLeft.x + margin, videoTopLeft.y + margin, longEdge, shortEdge);
@@ -225,6 +210,21 @@ void ofApp::draw(){
     //bottom right
     ofRect(videoBottomRight.x - margin - longEdge, videoBottomRight.y - margin - shortEdge, longEdge, shortEdge);
     ofRect(videoBottomRight.x - margin - shortEdge, videoBottomRight.y - margin - longEdge, shortEdge, longEdge);
+    
+    //timer
+    if(bRecording){
+        ofPushStyle();
+        ofSetColor(255, 0, 0);
+        openSansLarge.drawString("REC", videoTopRight.x - margin * 5 - 60, videoTopRight.y + margin * 4 + 10);
+        ofCircle(videoTopRight.x - margin * 4, videoTopRight.y + margin * 4, 10);
+        
+        if(mark - ofGetElapsedTimeMillis() > 0){
+            string timestamp = generateTimeStamp(mark - ofGetElapsedTimeMillis());
+            openSansLarge.drawString(timestamp, videoBottomLeft.x + staticFbo.getWidth()/2 - 60, videoBottomLeft.y - margin);
+        }
+        ofPopStyle();
+        
+    }
     
     if( hideGui ){
         ofShowCursor();
@@ -255,10 +255,7 @@ void ofApp::startRecording(){
         lastFile = fileName+ofGetTimestampString();
         vidRecorderMP4.setupCustomOutput(vidGrabber.getWidth(), vidGrabber.getHeight(), 30, 0, 0, "-vcodec libx264 -b 1000k -pix_fmt yuv420p -f mp4 " + ofFilePath::getAbsolutePath(lastFile + ".mp4"), true, false); //the last booleans sync the video timing to the main thread
         vidRecorderMP4Distort.setupCustomOutput(vidGrabber.getWidth(), vidGrabber.getHeight(), 30, 0, 0, "-vcodec libx264 -b 1000k -pix_fmt yuv420p -f mp4 " + ofFilePath::getAbsolutePath(lastFile) + "_distorted.mp4", true, false); //the last booleans sync the video timing to the main thread
-//        vidRecorderMP4.setup(fileName+ofGetTimestampString()+".mp4", vidGrabber.getWidth(), vidGrabber.getHeight(), 30, true, false); // no audio
-//        vidRecorderMP4Distort.setup(fileName+ofGetTimestampString()+"_distorted.mp4", vidGrabber.getWidth(), vidGrabber.getHeight(), 30, true, false); // no audio
         
-//        vidRecorder.start();
         vidRecorderMP4.start();
         vidRecorderMP4Distort.start();
     }
@@ -275,8 +272,11 @@ void ofApp::stopRecording(){
 
 string ofApp::generateTimeStamp(unsigned long long time){
     stringstream ss;
-    //minutes
-    ss << "00:" <<"0" << time / 1000.0 << ":" << time/100.0 << endl;
+    //minutes : seconds . thousands of a second
+    int seconds = time /1000;
+    int hundreds = (float(time) / 1000 - seconds) * 100;
+    
+    ss << "00:" << ((seconds < 10)? "0":"") << seconds << ":" << ((hundreds < 10)? "0":"") << hundreds << endl;
     
     return ss.str();
 }

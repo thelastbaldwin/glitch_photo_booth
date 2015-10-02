@@ -67,4 +67,5 @@ public:
     ofFbo filmFbo;
     
     ofShader badTvShader, rgbShiftShader, filmShader, staticShader;
+    ofTrueTypeFont openSansLarge, openSansRegular;
 };
