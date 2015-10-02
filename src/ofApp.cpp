@@ -10,13 +10,12 @@ void ofApp::setup(){
     vidGrabber.initGrabber(640, 480);
     
     fileName = "testMovie";
-    fileExt = ".mov"; // ffmpeg uses the extension to determine the container type. run 'ffmpeg -formats' to see supported formats
+    fileExt = ".mp4"; // ffmpeg uses the extension to determine the container type. run 'ffmpeg -formats' to see supported formats
     
     // override the default codecs if you like
     // run 'ffmpeg -codecs' to find out what your implementation supports (or -formats on some older versions)
-    string bitRate = "800k";
+    string bitRate = "1000k";
     //    vidRecorder.setVideoCodec("libx264");
-    vidRecorder.setVideoBitrate(bitRate);
     vidRecorderMP4.setVideoBitrate(bitRate);
     vidRecorderMP4.setVideoCodec("libx264");
     vidRecorderMP4Distort.setVideoBitrate(bitRate);
@@ -79,15 +78,9 @@ void ofApp::setup(){
     
     gui.setup(parameters);
     gui.minimizeAll();
-    
-    //for testing so I don't have to keep taking videos
-    recordedVideoPlayback.loadMovie("test_video.mov");
-    recordedVideoPlayback.play();
-    
 }
 
 void ofApp::exit() {
-    vidRecorder.close();
     vidRecorderMP4.close();
     vidRecorderMP4Distort.close();
 }
@@ -103,6 +96,60 @@ void ofApp::update(){
     }
     
     vidGrabber.update();
+    if(vidGrabber.isFrameNew() && bRecording){
+        if( !vidRecorderMP4.addFrame(vidGrabber.getPixelsRef())){
+            ofLogWarning("This frame was not added to the mp4 recorder!");
+        }
+        
+        
+        ofPixels px;
+        staticFbo.readToPixels(px);
+        if (!vidRecorderMP4Distort.addFrame(px)){
+            ofLogWarning("This frame was not added to the distorted mp4 recorder!");
+        }
+    }
+    
+    // Check if the video recorder encountered any error while writing video frame or audio smaples.
+    if( vidRecorderMP4.hasVideoError()){
+        ofLogWarning("The mp4 video recorder failed to write some frames!");
+    }
+    if(vidRecorderMP4Distort.hasVideoError()){
+        ofLogWarning("The distorted mp4 video recorder failed to write some frames!");
+    }
+    
+    time += 0.1;
+}
+
+//--------------------------------------------------------------
+void ofApp::draw(){
+    ofBackground(0);
+    ofSetColor(255, 255, 255);
+//    
+//    stringstream ss;
+//    ss << "video queue size: " << vidRecorder.getVideoQueueSize() << endl
+//    << "FPS: " << ofGetFrameRate() << endl
+//    << (bRecording?"pause":"start") << " recording: r" << endl
+//    << (bRecording?"close current video file: c":"") << endl;
+//    
+    //reference points
+    ofPoint videoTopLeft((ofGetWidth() - staticFbo.getWidth())/2,(ofGetHeight() - staticFbo.getHeight())/2);
+    ofPoint videoTopRight = videoTopLeft + ofPoint(staticFbo.getWidth(), 0);
+    ofPoint videoBottomLeft = videoTopLeft + ofPoint(0, staticFbo.getHeight());
+    ofPoint videoBottomRight = videoTopLeft + ofPoint(staticFbo.getWidth(), staticFbo.getHeight());
+    
+    
+//    ofSetColor(0,0,0,100);
+//    ofRect(0, 0, 260, 75);
+//    ofSetColor(255, 255, 255);
+//    ofDrawBitmapString(ss.str(),15,15);
+    
+    
+    if(bRecording){
+        ofPushStyle();
+        ofSetColor(255, 0, 0);
+        ofCircle(ofGetWidth() - 20, 20, 5);
+        ofPopStyle();
+    }
     
     //FBO sequence
     ofTexture tex;
@@ -158,76 +205,8 @@ void ofApp::update(){
     quad.draw();
     staticShader.end();
     staticFbo.end();
-
     
-    if(vidGrabber.isFrameNew() && bRecording){
-
-        if (!vidRecorder.addFrame(vidGrabber.getPixelsRef())){
-            ofLogWarning("This frame was not added to the main recorder!");
-        }
-        
-        if( !vidRecorderMP4.addFrame(vidGrabber.getPixelsRef())){
-            ofLogWarning("This frame was not added to the mp4 recorder!");
-        }
-        
-        
-        ofPixels px;
-        staticFbo.readToPixels(px);
-        if (!vidRecorderMP4Distort.addFrame(px)){
-            ofLogWarning("This frame was not added to the distorted mp4 recorder!");
-        }
-    }
-    
-    // Check if the video recorder encountered any error while writing video frame or audio smaples.
-    if (vidRecorder.hasVideoError()) {
-        ofLogWarning("The main video recorder failed to write some frames!");
-    }
-    if( vidRecorderMP4.hasVideoError()){
-        ofLogWarning("The mp4 video recorder failed to write some frames!");
-    }
-    if(vidRecorderMP4Distort.hasVideoError()){
-        ofLogWarning("The distorted mp4 video recorder failed to write some frames!");
-    }
-    
-    if(recordedVideoPlayback.isLoaded()){
-        recordedVideoPlayback.update();
-    }
-    
-    time += 0.1;
-}
-
-//--------------------------------------------------------------
-void ofApp::draw(){
-    ofBackground(0);
-    ofSetColor(255, 255, 255);
-    
-    stringstream ss;
-    ss << "video queue size: " << vidRecorder.getVideoQueueSize() << endl
-    << "FPS: " << ofGetFrameRate() << endl
-    << (bRecording?"pause":"start") << " recording: r" << endl
-    << (bRecording?"close current video file: c":"") << endl;
-    
-    //reference points
-    ofPoint videoTopLeft((ofGetWidth() - staticFbo.getWidth())/2,(ofGetHeight() - staticFbo.getHeight())/2);
-    ofPoint videoTopRight = videoTopLeft + ofPoint(staticFbo.getWidth(), 0);
-    ofPoint videoBottomLeft = videoTopLeft + ofPoint(0, staticFbo.getHeight());
-    ofPoint videoBottomRight = videoTopLeft + ofPoint(staticFbo.getWidth(), staticFbo.getHeight());
-    
-    
-    ofSetColor(0,0,0,100);
-    ofRect(0, 0, 260, 75);
-    ofSetColor(255, 255, 255);
-    ofDrawBitmapString(ss.str(),15,15);
-    
-    
-    if(bRecording){
-        ofPushStyle();
-        ofSetColor(255, 0, 0);
-        ofCircle(ofGetWidth() - 20, 20, 5);
-        ofPopStyle();
-    }
-    
-        //final output
+    //final output
     staticFbo.draw(videoTopLeft);
     
     //corners
@@ -272,13 +251,14 @@ void ofApp::startRecording(){
     bRecording = !bRecording;
     const unsigned long long DURATION = 5000; //5 seconds
     mark = ofGetElapsedTimeMillis() + DURATION;
-    if(bRecording && !vidRecorder.isInitialized()) {
-        lastFile = fileName+ofGetTimestampString()+fileExt;
-        vidRecorder.setupCustomOutput(vidGrabber.getWidth(), vidGrabber.getHeight(), 30, 0, 0, "-vcodec libx264 -b 800k -pix_fmt yuv420p -f mov " + ofFilePath::getAbsolutePath(lastFile), true, false); //the last booleans sync the video timing to the main thread
-        vidRecorderMP4.setup(fileName+ofGetTimestampString()+".mp4", vidGrabber.getWidth(), vidGrabber.getHeight(), 30, true, false); // no audio
-        vidRecorderMP4Distort.setup(fileName+ofGetTimestampString()+"_distorted.mp4", vidGrabber.getWidth(), vidGrabber.getHeight(), 30, true, false); // no audio
+    if(bRecording && !vidRecorderMP4.isInitialized() && !vidRecorderMP4Distort.isInitialized()) {
+        lastFile = fileName+ofGetTimestampString();
+        vidRecorderMP4.setupCustomOutput(vidGrabber.getWidth(), vidGrabber.getHeight(), 30, 0, 0, "-vcodec libx264 -b 1000k -pix_fmt yuv420p -f mp4 " + ofFilePath::getAbsolutePath(lastFile + ".mp4"), true, false); //the last booleans sync the video timing to the main thread
+        vidRecorderMP4Distort.setupCustomOutput(vidGrabber.getWidth(), vidGrabber.getHeight(), 30, 0, 0, "-vcodec libx264 -b 1000k -pix_fmt yuv420p -f mp4 " + ofFilePath::getAbsolutePath(lastFile) + "_distorted.mp4", true, false); //the last booleans sync the video timing to the main thread
+//        vidRecorderMP4.setup(fileName+ofGetTimestampString()+".mp4", vidGrabber.getWidth(), vidGrabber.getHeight(), 30, true, false); // no audio
+//        vidRecorderMP4Distort.setup(fileName+ofGetTimestampString()+"_distorted.mp4", vidGrabber.getWidth(), vidGrabber.getHeight(), 30, true, false); // no audio
         
-        vidRecorder.start();
+//        vidRecorder.start();
         vidRecorderMP4.start();
         vidRecorderMP4Distort.start();
     }
@@ -287,17 +267,8 @@ void ofApp::startRecording(){
 //--------------------------------------------------------------
 void ofApp::stopRecording(){
     bRecording = false;
-    vidRecorder.close();
     vidRecorderMP4.close();
     vidRecorderMP4Distort.close();
-    
-    //race condition!
-    //TODO: Find the lowest safe value
-    ofSleepMillis(500);
-    
-    //try and load the video
-    recordedVideoPlayback.loadMovie(lastFile);
-    recordedVideoPlayback.play();
     
     //TODO:signal via osc that we've saved a new set of videos
 }

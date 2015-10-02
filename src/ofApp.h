@@ -52,7 +52,6 @@ public:
     ofParameter<float> nIntensity;
     
     ofVideoGrabber      vidGrabber;
-    ofxVideoRecorder    vidRecorder;
     ofxVideoRecorder    vidRecorderMP4;
     ofxVideoRecorder    vidRecorderMP4Distort;
 
@@ -68,6 +67,4 @@ public:
     ofFbo filmFbo;
     
     ofShader badTvShader, rgbShiftShader, filmShader, staticShader;
-    
-    ofVideoPlayer recordedVideoPlayback;
 };
