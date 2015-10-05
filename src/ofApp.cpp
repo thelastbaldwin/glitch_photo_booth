@@ -80,7 +80,7 @@ void ofApp::setup(){
     
     //set up font
     openSansLarge.loadFont("OpenSans-Regular.ttf", 22);
-    openSansRegular.loadFont("OpenSans-Regular.ttf", 18);
+    openSansRegular.loadFont("OpenSans-Regular.ttf", 16);
     
     //OSC
     receiver.setup(RECEIVE_PORT);
@@ -247,7 +247,21 @@ void ofApp::draw(){
         ofPopStyle();
     }
     
-    drawButton(ofVec2f(videoBottomRight.x - 50, videoBottomRight.y + 60));
+    string message;
+    if(!isProcessing && !isRecording){
+        message = "Press Record to create a 6 second video. \nUse the dials below to change the effects";
+    }
+    if(isRecording){
+        message = "Your video is now recording";
+    }
+    if(isProcessing){
+        message = "We are processing your video. Please wait.";
+    }
+    openSansRegular.drawString(message, videoBottomLeft.x, videoBottomLeft.y +50);
+    
+    if(!isProcessing && !isRecording){
+        drawButton(ofVec2f(videoBottomRight.x - 50, videoBottomRight.y + 60));
+    }
     
     if( hideGui ){
 //        ofShowCursor();
