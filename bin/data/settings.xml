@@ -1,7 +1,7 @@
 <group>
 	<Bad_TV>
 		<Thick_Distort>3.55204</Thick_Distort>
-		<Fine_Distort>1.92755</Fine_Distort>
+		<Fine_Distort>0.506122</Fine_Distort>
 		<Distort_Speed>0.178571</Distort_Speed>
 		<Roll_Speed>0.0255102</Roll_Speed>
 	</Bad_TV>
@@ -10,13 +10,13 @@
 		<Angle>0</Angle>
 	</RGB_Shift>
 	<Static>
-		<Amount>0.122449</Amount>
+		<Amount>0.0510204</Amount>
 		<Size>1</Size>
 	</Static>
 	<Scanlines>
 		<Count>326</Count>
-		<sIntensity>0.428571</sIntensity>
-		<nIntensity>0.1</nIntensity>
+		<sIntensity>0.163265</sIntensity>
+		<nIntensity>0.122449</nIntensity>
 	</Scanlines>
 <group/>
 </group>

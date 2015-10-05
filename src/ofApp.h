@@ -3,6 +3,7 @@
 #include "ofMain.h"
 #include "ofxVideoRecorder.h"
 #include "ofxGui.h"
+#include "ofxOsc.h"
 
 class ofApp : public ofBaseApp{
     
@@ -28,6 +29,8 @@ public:
     void drawButton(const ofVec2f& center);
     const int buttonSize = 50;
     const int DURATION = 6000;
+    const int RECEIVE_PORT = 12345;
+    const int SEND_PORT = 12346;
     ofVec2f buttonCenter;
     
     ofMesh quad;
@@ -59,7 +62,8 @@ public:
     ofxVideoRecorder    vidRecorderMP4;
     ofxVideoRecorder    vidRecorderMP4Distort;
 
-    bool bRecording;
+    bool isRecording;
+    bool isProcessing;
     long long mark;
     string fileName;
     string fileExt;
@@ -72,4 +76,7 @@ public:
     
     ofShader badTvShader, rgbShiftShader, filmShader, staticShader;
     ofTrueTypeFont openSansLarge, openSansRegular;
+    
+    ofxOscReceiver receiver;
+    ofxOscSender sender;
 };

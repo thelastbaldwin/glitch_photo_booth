@@ -19,7 +19,8 @@ void ofApp::setup(){
     vidRecorderMP4Distort.setVideoBitrate(bitRate);
     vidRecorderMP4Distort.setVideoCodec("libx264");
     
-    bRecording = false;
+    isRecording = false;
+    isProcessing = false;
     ofEnableAlphaBlending();
     
     //shader stuff
@@ -80,6 +81,10 @@ void ofApp::setup(){
     //set up font
     openSansLarge.loadFont("OpenSans-Regular.ttf", 22);
     openSansRegular.loadFont("OpenSans-Regular.ttf", 18);
+    
+    //OSC
+    receiver.setup(RECEIVE_PORT);
+    sender.setup("127.0.0.1", SEND_PORT);
 }
 
 void ofApp::exit() {
@@ -89,7 +94,22 @@ void ofApp::exit() {
 
 //--------------------------------------------------------------
 void ofApp::update(){
-    if(bRecording){
+    // check for waiting messages
+    while(receiver.hasWaitingMessages()){
+        // get the next message
+        ofxOscMessage m;
+        receiver.getNextMessage(&m);
+        
+        // check for mouse moved message
+        if(m.getAddress() == "/uploaded"){
+            // TODO: make handle message method
+            cout << "code received: " << m.getArgAsString(0) << endl;
+        }if(m.getAddress() == "/heartbeat"){
+            cout << "heartbeat received" << endl;
+        }
+    }
+    
+    if(isRecording){
         long long now = ofGetElapsedTimeMillis();
         if(mark - now <= 0){
             stopRecording();
@@ -98,7 +118,7 @@ void ofApp::update(){
     }
     
     vidGrabber.update();
-    if(vidGrabber.isFrameNew() && bRecording){
+    if(vidGrabber.isFrameNew() && isRecording){
         if( !vidRecorderMP4.addFrame(vidGrabber.getPixelsRef())){
             ofLogWarning("This frame was not added to the mp4 recorder!");
         }
@@ -210,7 +230,7 @@ void ofApp::draw(){
     ofRect(videoBottomRight.x - margin - shortEdge, videoBottomRight.y - margin - longEdge, shortEdge, longEdge);
     
     //timer
-    if(bRecording){
+    if(isRecording){
         ofPushStyle();
         ofSetColor(255, 0, 0);
         openSansLarge.drawString("REC", videoTopRight.x - margin * 5 - 60, videoTopRight.y + margin * 4 + 10);
@@ -218,6 +238,12 @@ void ofApp::draw(){
         
         string timestamp = generateTimeStamp(mark - ofGetElapsedTimeMillis());
         openSansLarge.drawString(timestamp, videoBottomLeft.x + staticFbo.getWidth()/2 - 60, videoBottomLeft.y - margin);
+        
+        //overlay
+        ofSetColor(255, 0, 0, 125 + sin(time) * 125);
+        ofNoFill();
+        ofRect(videoTopLeft.x, videoTopRight.y, vidGrabber.getWidth(), vidGrabber.getHeight());
+        
         ofPopStyle();
     }
     
@@ -245,9 +271,9 @@ void ofApp::keyPressed(int key){
 
 //--------------------------------------------------------------
 void ofApp::startRecording(const unsigned long long duration){
-    bRecording = !bRecording;
+    isRecording = !isRecording;
     mark = ofGetElapsedTimeMillis() + duration;
-    if(bRecording && !vidRecorderMP4.isInitialized() && !vidRecorderMP4Distort.isInitialized()) {
+    if(isRecording && !vidRecorderMP4.isInitialized() && !vidRecorderMP4Distort.isInitialized()) {
         lastFile = fileName+ofGetTimestampString();
         vidRecorderMP4.setupCustomOutput(vidGrabber.getWidth(), vidGrabber.getHeight(), 30, 0, 0, "-vcodec libx264 -b 1000k -pix_fmt yuv420p -f mp4 " + ofFilePath::getAbsolutePath(lastFile + ".mp4"), true, false); //the last booleans sync the video timing to the main thread
         vidRecorderMP4Distort.setupCustomOutput(vidGrabber.getWidth(), vidGrabber.getHeight(), 30, 0, 0, "-vcodec libx264 -b 1000k -pix_fmt yuv420p -f mp4 " + ofFilePath::getAbsolutePath(lastFile) + "_distorted.mp4", true, false); //the last booleans sync the video timing to the main thread
@@ -259,11 +285,17 @@ void ofApp::startRecording(const unsigned long long duration){
 
 //--------------------------------------------------------------
 void ofApp::stopRecording(){
-    bRecording = false;
+    isRecording = false;
     vidRecorderMP4.close();
     vidRecorderMP4Distort.close();
     
-    //TODO:signal via osc that we've saved a new set of videos
+    //signal via osc that we've saved a new set of videos
+    ofxOscMessage m;
+    m.setAddress("/video");
+    m.addStringArg(lastFile + ".mp4");
+    m.addStringArg(lastFile + "_distorted.mp4");
+    m.addFloatArg(ofGetElapsedTimef());
+    sender.sendMessage(m);
 }
 
 string ofApp::generateTimeStamp(unsigned long long time){
@@ -292,7 +324,7 @@ void ofApp::keyReleased(int key){
     
     if(key=='r'){
         //TODO: remove stop/start functionality
-        if(!bRecording){
+        if(!isRecording){
             startRecording(DURATION);
         }
     }
@@ -326,7 +358,7 @@ void ofApp::mouseReleased(int x, int y, int button){
     ofVec2f p1(x, y);
     ofVec2f buttonCenter(670, 540); //TODO: make the button center and important points a struct
     
-    if(p1.distance(buttonCenter) < buttonSize){
+    if(!isRecording && p1.distance(buttonCenter) < buttonSize){
         startRecording(DURATION);
     }
 }
