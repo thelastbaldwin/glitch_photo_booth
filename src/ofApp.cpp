@@ -85,6 +85,40 @@ void ofApp::setup(){
     //OSC
     receiver.setup(RECEIVE_PORT);
     sender.setup("127.0.0.1", SEND_PORT);
+    
+    //arduino stuff
+    arduino.connect("/dev/tty.usbmodem1411", 57600);
+    
+    // listen for EInitialized notification. this indicates that
+    // the arduino is ready to receive commands and it is safe to
+    // call setupArduino()
+    ofAddListener(arduino.EInitialized, this, &ofApp::setupArduino);
+    isArduinoSetup	= false;	// flag so we setup arduino when its ready, you don't need to touch this :)
+}
+
+//--------------------------------------------------------------
+void ofApp::setupArduino(const int & version) {
+    // remove listener because we don't need it anymore
+    ofRemoveListener(arduino.EInitialized, this, &ofApp::setupArduino);
+    
+    // it is now safe to send commands to the Arduino
+    isArduinoSetup = true;
+    
+    // print firmware name and version to the console
+    ofLogNotice() << arduino.getFirmwareName();
+    ofLogNotice() << "firmata v" << arduino.getMajorFirmwareVersion() << "." << arduino.getMinorFirmwareVersion();
+    
+    // Note: pins A0 - A5 can be used as digital input and output.
+    // Refer to them as pins 14 - 19 if using StandardFirmata from Arduino 1.0.
+    // If using Arduino 0022 or older, then use 16 - 21.
+    // Firmata pin numbering changed in version 2.3 (which is included in Arduino 1.0)
+    
+    // set pin A0-A6 to analog input
+    for(int i = 0; i < 6; ++i){
+        arduino.sendAnalogPinReporting(i, ARD_ANALOG);
+    }
+    
+    ofAddListener(arduino.EAnalogPinChanged, this, &ofApp::analogPinChanged);
 }
 
 void ofApp::exit() {
@@ -94,6 +128,8 @@ void ofApp::exit() {
 
 //--------------------------------------------------------------
 void ofApp::update(){
+    arduino.update();
+    
     // check for waiting messages
     while(receiver.hasWaitingMessages()){
         // get the next message
@@ -349,6 +385,56 @@ void ofApp::keyReleased(int key){
     }
     if(key=='h'){
         hideGui = !hideGui;
+    }
+}
+
+//--------------------------------------------------------------
+void ofApp::analogPinChanged(const int & pinNum) {
+    enum Settings {
+        DISTORTION,
+        DISTORTION_SPEED,
+        ROLL_SPEED,
+        RGB_SHIFT,
+        STATIC_AMT,
+        SCANLINE_COUNT
+    };
+    
+    int rawValue = arduino.getAnalog(pinNum);
+    float mappedValue;
+    float threshold;
+    const int POT_MIN = 0;
+    const int POT_MAX = 1023; //testing on a breadboard, this was the highest value of my poteniometers
+    
+    switch (pinNum){
+        case DISTORTION:
+            mappedValue = ofMap(POT_MAX - rawValue, POT_MIN, POT_MAX, thickDistort.getMin(), thickDistort.getMax());
+            fineDistort = thickDistort = mappedValue;
+            break;
+        case DISTORTION_SPEED:
+            mappedValue = ofMap(POT_MAX - rawValue, POT_MIN, POT_MAX, distortSpeed.getMin(), distortSpeed.getMax());
+            mappedValue = floorf(mappedValue * 10) / 10.0; //reduce to 1 decimal place
+            distortSpeed = (abs(mappedValue - distortSpeed) > distortSpeed * 0.01)? mappedValue : distortSpeed.get();
+            distortSpeed = mappedValue;
+            break;
+        case ROLL_SPEED:
+            mappedValue = ofMap(POT_MAX - rawValue, POT_MIN, POT_MAX, rollSpeed.getMin(), rollSpeed.getMax());
+            mappedValue = floorf(mappedValue * 10) / 10.0; //reduce to 1 decimal place
+            rollSpeed = (abs(mappedValue - rollSpeed) > rollSpeed * 0.1)? mappedValue: rollSpeed.get();
+            break;
+        case RGB_SHIFT:
+            mappedValue = ofMap(POT_MAX - rawValue, POT_MIN, POT_MAX, rgbAmount.getMin(), rgbAmount.getMax());
+            rgbAmount = mappedValue;
+            break;
+        case STATIC_AMT:
+            mappedValue = ofMap(POT_MAX - rawValue, POT_MIN, POT_MAX, staticAmount.getMin(), staticAmount.getMax());
+            staticAmount = mappedValue;
+            break;
+        case SCANLINE_COUNT:
+            mappedValue = ofMap(POT_MAX - rawValue, POT_MIN, POT_MAX, count.getMin(), count.getMax());
+            count = mappedValue;
+            break;
+        default:
+            break;
     }
 }
 

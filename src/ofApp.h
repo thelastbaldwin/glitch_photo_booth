@@ -79,4 +79,10 @@ public:
     
     ofxOscReceiver receiver;
     ofxOscSender sender;
+    
+    ofArduino	arduino;
+    bool		isArduinoSetup;			// flag variable for setting up arduino once
+    void setupArduino(const int & version);
+    void analogPinChanged(const int & pinNum);
+    void updateArduino();
 };
