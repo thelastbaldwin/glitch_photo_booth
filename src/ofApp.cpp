@@ -418,7 +418,7 @@ void ofApp::analogPinChanged(const int & pinNum) {
             break;
         case ROLL_SPEED:
             mappedValue = ofMap(POT_MAX - rawValue, POT_MIN, POT_MAX, rollSpeed.getMin(), rollSpeed.getMax());
-            mappedValue = floorf(mappedValue * 10) / 10.0; //reduce to 1 decimal place
+            mappedValue = floorf(mappedValue * 10) / 10.0; 
             rollSpeed = (abs(mappedValue - rollSpeed) > rollSpeed * 0.1)? mappedValue: rollSpeed.get();
             break;
         case RGB_SHIFT:
