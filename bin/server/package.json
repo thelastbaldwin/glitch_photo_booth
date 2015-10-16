@@ -4,9 +4,11 @@
   "description": "responsible for converting mp4 and mpv movies",
   "main": "index.js",
   "dependencies": {
+    "aws-sdk": "^2.2.9",
     "express": "^4.13.3",
     "fluent-ffmpeg": "^2.0.1",
-    "osc-min": "^0.2.0"
+    "osc-min": "^0.2.0",
+    "request": "^2.65.0"
   },
   "devDependencies": {},
   "scripts": {

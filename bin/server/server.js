@@ -3,11 +3,25 @@ var express = require('express'),
 	http = require('http').Server(app),
 	dgram = require('dgram'),
 	osc = require('osc-min'),
+	AWS = require('aws-sdk'),
+	request = require('request'),
+	fs = require('fs'),
+	config = require('./creds/config'),
 	sendSocket = dgram.createSocket('udp4'),
 	receiveSocket = dgram.createSocket('udp4'),
-	SEND_PORT = 12345,
+	imageUUID;
+
+const SEND_PORT = 12345,
 	RECEIVE_PORT = 12346,
-	OUTPUT_DIR = "../data/";
+	OUTPUT_DIR = '../data/',
+	MEDIA_TYPE = 'video',				// set to 'photo' for MMS, 'video' for SMS
+	STORE_ID = '1',							// store number: '1', '220', etc.
+	EXPIRE_TIME = 2592000,			// S3 file expiration, in milliseconds: 1 mo. = 60 * 60 * 24 * 30 = 2592000
+	AWS_PARAMS = config.AWS_params,
+	API_URL = config.settings.URLs.photobooth_gateway_URL,
+	KEEN_URL = config.settings.URLs.keen_project_URL;
+
+AWS.config.update(AWS_PARAMS);
 
 sendSocket.bind(SEND_PORT);
 receiveSocket.bind(RECEIVE_PORT);
@@ -15,9 +29,9 @@ receiveSocket.bind(RECEIVE_PORT);
 function getOSCMessage(msg){
 	//extract relevant data from OSC Message
 	var oscMessage = osc.fromBuffer(msg);
-	try{
+	try {
 		console.log(oscMessage);
-		// //translate osc buffer into javascript object
+		// translate osc buffer into javascript object
 		var element = oscMessage.elements[0],
 			address = element.address,
 			args = element.args,
@@ -37,17 +51,17 @@ function getOSCMessage(msg){
 
 receiveSocket.on('message', function(message, remote){
 	var oscData = getOSCMessage(message);
-	// looks like this 
-	// {
-	// 	address: '/video',
-	// 	cleanMovie: 'filename.mp4',
-	// 	distortedMovie: 'filename_distorted.mp4'
-	// }
+	aws_s3.saveImageOnS3(OUTPUT_DIR + '/' message.distortedMovie);
+
 	// console.log(oscData);
 
-	//find the files using OUTPUT_DIR and filenames
-	//send a post request to S3 with resources
-	//on complete, call sendOSCMessage with the code
+	/* 
+		message: {
+		address: '/video',
+		cleanMovie: 'filename.mp4',
+		distortedMovie: 'filename_distorted.mp4'
+	}
+	*/
 });
 
 function sendOSCMessage(code){
@@ -65,3 +79,157 @@ var sendInterval = setInterval(function(){
 	sendOSCMessage('1337H4X04L0L0L0L0L');
 }, 3000);
 
+// === WATERFALL
+/* 	
+	Process where each in a series of functions calls the next on success.
+	If the process fails at any point in the waterfall, the program calls
+	sendOSCMessage('failure'), but if it reaches the end of the process
+	successfully, it calls sendOSCMessage(imageUUID).
+
+	Step 1: aws_s3.saveImageOnS3(image_string)
+	Step 2: aws_s3.getAndReturnSignedURL(object_key)
+	Step 3: postMetadataToGateway(URL)
+*/
+
+var aws_s3 = (function() {
+
+	var s3 = new AWS.S3(); 
+
+	return {
+		saveImageOnS3: function(image_string) {
+			fs.readFile(image_string, function (err, data) {
+			  if (err) { 
+			  	sendOSCMessage('failure'); 
+			  } else {
+			  	imageUUID = generateUUID();		// globar var used in file stamp and msg back to client
+
+			  	var base64data = new Buffer(data, 'binary');
+			  	var file_stamp = generateFileStamp();
+				  var object_key = 'Store_' + STORE_ID + '/' + file_stamp + '.jpg';
+
+					var params = {
+						Bucket: config.settings.bucket, 
+						Key: object_key, 
+						Body: base64data,
+						ContentEncoding: 'base64',	// may or may not be required
+					  ContentType: 'image/jpeg'
+					};
+
+					s3.putObject(params, function(err, data) {
+						if (err) { 
+							console.log('Error putting object on S3: ', err); 
+							sendOSCMessage('failure');
+						} else { 
+							// console.log('Placed object on S3: ', object_key); 
+							aws_s3.getAndReturnSignedURL(object_key);
+						}  
+					});
+			  }
+			});
+		}, 
+
+		getAndReturnSignedURL: function(object_key) {
+			// URL should expire in 
+			var params = {
+				Bucket: bucket,
+				Key: object_key,
+				Expires: EXPIRE_TIME;
+			}
+
+			s3.getSignedUrl('getObject', params, function(err, url) {
+				if (err) {
+					console.log('Error getting signed URL from S3: ', err);
+					sendOSCMessage('failure');
+				} else {
+					// console.log('Returned signed URL: ', url);
+					postMetadataToGateway(url);
+				}
+			});
+		}
+	}
+})();
+
+function postMetadataToGateway(URL) {
+	console.log('Attempting to save image data in Photo Booth Gateway');
+
+	var tempObject = { 
+		'UUID': UUID, 
+		'insert_date': new Date(),
+		'media': URL,			
+		'store_id': 'Store ' + STORE_ID,
+		'media_type': MEDIA_TYPE
+	};
+
+	request({
+    url: API_URL + '/save',
+    method: 'POST',
+    json: true,
+    body: tempObject
+	}, function (error, response, body) {
+		console.log(response);
+		if (!error && response.statusCode == 200) {
+	    // console.log('success: ' + response);
+			// console.log('Saved file data in Photo Booth Gateway');
+			if (success_callback) { sendOSCMessage(imageUUID); }
+			makeKeenMetricsEntry({ 
+				'store': 'Store ' + STORE_ID,
+				'media': MEDIA_TYPE,
+				'image_id': imageUUID 
+			});
+	  } else {
+			console.log('Failed to save image data in Photo Booth Gateway: ' + response);
+		  console.log('Desc: ' + error);
+		  sendOSCMessage('failure');
+	  }
+	});
+}
+// === END WATERFALL
+
+// === HELPERS
+
+function generateUUID() { 
+	var UUID = '';
+  var possible = 'abcdefghijkmnopqrstuvwxyz23456789';
+
+  for (var i=0; i < 4; i++) {
+  	UUID += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+
+  return UUID;
+}
+
+function generateFileStamp(UUID) {
+	var date = new Date();
+
+	var month = addStringDigit((1 + date.getMonth()).toString());
+	var day = addStringDigit(date.getDate().toString());
+	var hours = addStringDigit(date.getHours().toString());
+	var minutes = addStringDigit(date.getMinutes().toString());
+
+	var file_stamp = store.id.toString() + month.toString() + day.toString() + hours.toString() + minutes.toString() + '_' + UUID;
+
+	function addStringDigit(tempString) {
+		if (tempString.length === 1) { tempString = '0' + tempString; }
+		return tempString;
+	}
+
+	return file_stamp;
+}
+
+function makeKeenMetricsEntry (obj) {
+	request({
+    url: KEEN_URL,
+    method: 'POST',
+    json: true,
+    body: obj
+	}, function (error, response, body) {
+		console.log(response);
+		if (!error && response.statusCode == 200) {
+	    // console.log('Posted event data to Keen.io');
+			// console.log(textStatus);
+	  } else {
+			console.log('Failed to save event data in Keen.io: ' + textStatus);
+	  }
+	});
+}
+// === END HELPERS

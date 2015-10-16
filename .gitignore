@@ -8,3 +8,5 @@ node_modules/
 bin/**/*.mp4
 bin/**/*.mov
 *.log
+bin/server/creds/
+bin/server/node_modules/
