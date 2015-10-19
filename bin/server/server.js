@@ -30,7 +30,7 @@ function getOSCMessage(msg){
 	//extract relevant data from OSC Message
 	var oscMessage = osc.fromBuffer(msg);
 	try {
-		console.log(oscMessage);
+		// console.log(oscMessage);
 		// translate osc buffer into javascript object
 		var element = oscMessage.elements[0],
 			address = element.address,
@@ -51,9 +51,7 @@ function getOSCMessage(msg){
 
 receiveSocket.on('message', function(message, remote){
 	var oscData = getOSCMessage(message);
-	aws_s3.saveImageOnS3(OUTPUT_DIR + '/' + message.distortedMovie);
-
-	// console.log(oscData);
+	aws_s3.saveImageOnS3(OUTPUT_DIR + '/' + oscData.distortedMovie);
 
 	/* 
 		message: {
@@ -64,9 +62,11 @@ receiveSocket.on('message', function(message, remote){
 	*/
 });
 
-function sendOSCMessage(code){
+function sendOSCMessage(address, code){
+	code = code || '';
+
 	var buffer = osc.toBuffer({
-		address: '/uploaded',
+		address: '/' + address,
 		args : [{
 			type: "string",
 			value: code
@@ -76,8 +76,8 @@ function sendOSCMessage(code){
 }
 
 var sendInterval = setInterval(function(){
-	sendOSCMessage('1337H4X04L0L0L0L0L');
-}, 3000);
+	sendOSCMessage('heartbeat', '1337H4X04L0L0L0L0L');
+}, 10000);
 
 // === WATERFALL
 /* 	
@@ -98,12 +98,14 @@ var aws_s3 = (function() {
 	return {
 		saveImageOnS3: function(image_string) {
 			fs.readFile(image_string, function (err, data) {
+				console.log(err, data);
 			  if (err) { 
 			  	sendOSCMessage('failure'); 
 			  } else {
 			  	imageUUID = generateUUID();		// globar var used in file stamp and msg back to client
 
 			  	var base64data = new Buffer(data, 'binary');
+			  	console.log(base64data);
 			  	var file_stamp = generateFileStamp();
 				  var object_key = 'Store_' + STORE_ID + '/' + file_stamp + '.jpg';
 
@@ -170,7 +172,9 @@ function postMetadataToGateway(URL) {
 		if (!error && response.statusCode == 200) {
 	    // console.log('success: ' + response);
 			// console.log('Saved file data in Photo Booth Gateway');
-			if (success_callback) { sendOSCMessage(imageUUID); }
+			if (success_callback) { 
+				sendOSCMessage('uploaded', imageUUID); 
+			}
 			makeKeenMetricsEntry({ 
 				'store': 'Store ' + STORE_ID,
 				'media': MEDIA_TYPE,
@@ -179,7 +183,7 @@ function postMetadataToGateway(URL) {
 	  } else {
 			console.log('Failed to save image data in Photo Booth Gateway: ' + response);
 		  console.log('Desc: ' + error);
-		  sendOSCMessage('failure');
+		  sendOSCMessage('failure', '');
 	  }
 	});
 }
@@ -206,6 +210,7 @@ function generateFileStamp(UUID) {
 	var hours = addStringDigit(date.getHours().toString());
 	var minutes = addStringDigit(date.getMinutes().toString());
 
+	//TODO: WHAT is store?
 	var file_stamp = store.id.toString() + month.toString() + day.toString() + hours.toString() + minutes.toString() + '_' + UUID;
 
 	function addStringDigit(tempString) {
