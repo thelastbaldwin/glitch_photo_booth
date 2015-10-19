@@ -7,8 +7,8 @@ var express = require('express'),
 	request = require('request'),
 	fs = require('fs'),
 	config = require('./creds/config'),
-	sendSocket = dgram.createSocket('udp4'),
-	receiveSocket = dgram.createSocket('udp4'),
+	sendSocket = dgram.createSocket({type:"udp4",reuseAddr:true}),
+	receiveSocket = dgram.createSocket({type:"udp4",reuseAddr:true}),
 	imageUUID;
 
 const SEND_PORT = 12345,
@@ -51,7 +51,7 @@ function getOSCMessage(msg){
 
 receiveSocket.on('message', function(message, remote){
 	var oscData = getOSCMessage(message);
-	aws_s3.saveImageOnS3(OUTPUT_DIR + '/' message.distortedMovie);
+	aws_s3.saveImageOnS3(OUTPUT_DIR + '/' + message.distortedMovie);
 
 	// console.log(oscData);
 
@@ -133,7 +133,7 @@ var aws_s3 = (function() {
 			var params = {
 				Bucket: bucket,
 				Key: object_key,
-				Expires: EXPIRE_TIME;
+				Expires: EXPIRE_TIME
 			}
 
 			s3.getSignedUrl('getObject', params, function(err, url) {

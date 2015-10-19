@@ -103,6 +103,7 @@ void ofApp::setupArduino(const int & version) {
     
     // it is now safe to send commands to the Arduino
     isArduinoSetup = true;
+    cout << "Arduino setup" << endl;
     
     // print firmware name and version to the console
     ofLogNotice() << arduino.getFirmwareName();
@@ -128,7 +129,9 @@ void ofApp::exit() {
 
 //--------------------------------------------------------------
 void ofApp::update(){
-    arduino.update();
+    if(isArduinoSetup){
+        arduino.update();
+    }
     
     // check for waiting messages
     while(receiver.hasWaitingMessages()){
