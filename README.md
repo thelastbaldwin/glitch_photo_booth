@@ -10,8 +10,6 @@ Movies are saved in mp4 format without audio.
 
 [node](http://nodejs.org)
 
-[Node fluent-mmpeg](https://github.com/fluent-ffmpeg/node-fluent-ffmpeg)
-
 [OpenFrameworks](http://openframeworks.cc/)
 
 [ofxVideoRecorder](https://github.com/timscaffidi/ofxVideoRecorder)
