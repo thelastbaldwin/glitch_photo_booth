@@ -146,6 +146,9 @@ void ofApp::update(){
         }if(m.getAddress() == "/heartbeat"){
             cout << "heartbeat received" << endl;
         }
+        if(m.getAddress() == "/failure"){
+            cout << "error!" << endl;
+        }
     }
     
     if(isRecording){
@@ -341,6 +344,9 @@ void ofApp::stopRecording(){
     isRecording = false;
     vidRecorderMP4.close();
     vidRecorderMP4Distort.close();
+    
+    //give the file time to close
+//    ofSleepMillis(250);
     
     //signal via osc that we've saved a new set of videos
     ofxOscMessage m;

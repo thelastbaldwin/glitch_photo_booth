@@ -98,14 +98,12 @@ var aws_s3 = (function() {
 	return {
 		saveImageOnS3: function(image_string) {
 			fs.readFile(image_string, function (err, data) {
-				console.log(err, data);
 			  if (err) { 
 			  	sendOSCMessage('failure'); 
 			  } else {
 			  	imageUUID = generateUUID();		// globar var used in file stamp and msg back to client
-
+			  	console.log('converting to base64');
 			  	var base64data = new Buffer(data, 'binary');
-			  	console.log(base64data);
 			  	var file_stamp = generateFileStamp();
 				  var object_key = 'Store_' + STORE_ID + '/' + file_stamp + '.jpg';
 
@@ -122,7 +120,7 @@ var aws_s3 = (function() {
 							console.log('Error putting object on S3: ', err); 
 							sendOSCMessage('failure');
 						} else { 
-							// console.log('Placed object on S3: ', object_key); 
+							console.log('Placed object on S3: ', object_key); 
 							aws_s3.getAndReturnSignedURL(object_key);
 						}  
 					});
@@ -143,7 +141,7 @@ var aws_s3 = (function() {
 					console.log('Error getting signed URL from S3: ', err);
 					sendOSCMessage('failure');
 				} else {
-					// console.log('Returned signed URL: ', url);
+					console.log('Returned signed URL: ', url);
 					postMetadataToGateway(url);
 				}
 			});
@@ -170,8 +168,8 @@ function postMetadataToGateway(URL) {
 	}, function (error, response, body) {
 		console.log(response);
 		if (!error && response.statusCode == 200) {
-	    // console.log('success: ' + response);
-			// console.log('Saved file data in Photo Booth Gateway');
+	    	console.log('success: ' + response);
+			console.log('Saved file data in Photo Booth Gateway');
 			if (success_callback) { 
 				sendOSCMessage('uploaded', imageUUID); 
 			}
@@ -181,9 +179,9 @@ function postMetadataToGateway(URL) {
 				'image_id': imageUUID 
 			});
 	  } else {
-			console.log('Failed to save image data in Photo Booth Gateway: ' + response);
-		  console.log('Desc: ' + error);
-		  sendOSCMessage('failure', '');
+		console.log('Failed to save image data in Photo Booth Gateway: ' + response);
+		console.log('Desc: ' + error);
+		sendOSCMessage('failure', '');
 	  }
 	});
 }
@@ -210,8 +208,7 @@ function generateFileStamp(UUID) {
 	var hours = addStringDigit(date.getHours().toString());
 	var minutes = addStringDigit(date.getMinutes().toString());
 
-	//TODO: WHAT is store?
-	var file_stamp = store.id.toString() + month.toString() + day.toString() + hours.toString() + minutes.toString() + '_' + UUID;
+	var file_stamp = STORE_ID.toString() + month.toString() + day.toString() + hours.toString() + minutes.toString() + '_' + UUID;
 
 	function addStringDigit(tempString) {
 		if (tempString.length === 1) { tempString = '0' + tempString; }
