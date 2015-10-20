@@ -6,6 +6,8 @@ then updates the application upon success.
 
 Movies are saved in mp4 format without audio.
 
+[Fix for XCode 7 projects](http://forum.openframeworks.cc/t/fix-for-xcode-7-and-of-0-8-4-opensslconf-h-not-found/20800)
+
 ### Dependencies: ###
 
 [node](http://nodejs.org)
