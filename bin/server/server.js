@@ -53,6 +53,9 @@ function getOSCMessage(msg){
 receiveSocket.on('message', function(message, remote){
 	var oscData = getOSCMessage(message);
 	aws_s3.saveMediaOnS3(OUTPUT_DIR + oscData.distortedMovie);
+	// aws_s3.saveMediaOnS3(OUTPUT_DIR + 'test.mp4');
+
+	console.log('filename: ', oscData.distortedMovie);
 
 	/* 
 		message: {
@@ -98,22 +101,18 @@ var aws_s3 = (function() {
 
 	return {
 		saveMediaOnS3: function(media_string) {
-			/*
 			fs.readFile(media_string, function (err, data) {
 			  if (err) { 
 			  	sendOSCMessage('failure'); 
 			  } else {
 			  	mediaUUID = generateUUID();		// globar var used in file stamp and msg back to client
-			  	console.log('converting to base64');
-			  	var base64data = new Buffer(data, 'binary');
 			  	var file_stamp = generateFileStamp();
 				  var object_key = 'store_' + STORE_ID + '/' + file_stamp + '.mp4';
 
 					var params = {
 						Bucket: config.settings.bucket, 
 						Key: object_key, 
-						Body: base64data,
-						ContentEncoding: 'base64',	// may or may not be required
+						Body: data,
 					  ContentType: 'video/mp4'
 					};
 
@@ -127,37 +126,6 @@ var aws_s3 = (function() {
 						}  
 					});
 			  }
-			});
-			*/
-
-			var fileStream = fs.createReadStream(media_string);
-
-			fileStream.on('error', function (err) {
-			  sendOSCMessage('failure'); 
-			});  
-
-			fileStream.on('open', function () {
-			  mediaUUID = generateUUID();		// globar var used in file stamp and msg back to client
-		  	var file_stamp = generateFileStamp();
-			  var object_key = 'store_' + STORE_ID + '/' + file_stamp + '.mp4';
-
-				var params = {
-					Bucket: config.settings.bucket, 
-					Key: object_key, 
-					Body: fileStream,
-					// ContentEncoding: 'base64',
-				  ContentType: 'video/mp4'
-				};
-
-				s3.putObject(params, function(err, data) {
-					if (err) { 
-						console.log('Error putting object on S3: ', err); 
-						sendOSCMessage('failure');
-					} else { 
-						console.log('Placed object on S3: ', object_key); 
-						aws_s3.getAndReturnSignedURL(object_key);
-					}  
-				});
 			});
 		}, 
 
