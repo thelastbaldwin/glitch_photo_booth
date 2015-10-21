@@ -4,6 +4,7 @@ var express = require('express'),
 	dgram = require('dgram'),
 	osc = require('osc-min'),
 	AWS = require('aws-sdk'),
+	proxy = require('proxy-agent'),
 	request = require('request'),
 	fs = require('fs'),
 	config = require('./creds/config'),
@@ -23,6 +24,9 @@ const SEND_PORT = 12345,
 	KEEN_URL = config.settings.URLs.keen_project_URL;
 
 AWS.config.update(AWS_PARAMS);
+AWS.config.update({
+  httpOptions: { agent: proxy('http://webproxy.nordstrom.net:8181') }
+});
 
 sendSocket.bind(SEND_PORT);
 receiveSocket.bind(RECEIVE_PORT);
