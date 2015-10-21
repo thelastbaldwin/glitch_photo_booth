@@ -1,8 +1,14 @@
+*
+
 .DS_Store
 
 *.app
-*.xcodeproj/
+*.xcodeproj
 *.pbxproj
+.xcscheme
+project.pbxproj
+*xcworkspace/
+xcshareddata/**
 node_modules/
 **ffmpeg_compiled/
 bin/**/*.mp4
