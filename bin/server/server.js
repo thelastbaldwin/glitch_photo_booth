@@ -9,7 +9,7 @@ var express = require('express'),
 	config = require('./creds/config'),
 	sendSocket = dgram.createSocket({type:"udp4",reuseAddr:true}),
 	receiveSocket = dgram.createSocket({type:"udp4",reuseAddr:true}),
-	imageUUID;
+	mediaUUID;
 
 const SEND_PORT = 12345,
 	RECEIVE_PORT = 12346,
@@ -18,6 +18,7 @@ const SEND_PORT = 12345,
 	STORE_ID = '1',							// store number: '1', '220', etc.
 	EXPIRE_TIME = 2592000,			// S3 file expiration, in milliseconds: 1 mo. = 60 * 60 * 24 * 30 = 2592000
 	AWS_PARAMS = config.AWS_params,
+	BUCKET = config.settings.bucket,
 	API_URL = config.settings.URLs.photobooth_gateway_URL,
 	KEEN_URL = config.settings.URLs.keen_project_URL;
 
@@ -51,7 +52,10 @@ function getOSCMessage(msg){
 
 receiveSocket.on('message', function(message, remote){
 	var oscData = getOSCMessage(message);
-	aws_s3.saveImageOnS3(OUTPUT_DIR + '/' + oscData.distortedMovie);
+	aws_s3.saveMediaOnS3(OUTPUT_DIR + oscData.distortedMovie);
+	// aws_s3.saveMediaOnS3(OUTPUT_DIR + 'test.mp4');
+
+	console.log('filename: ', oscData.distortedMovie);
 
 	/* 
 		message: {
@@ -84,7 +88,7 @@ var sendInterval = setInterval(function(){
 	Process where each in a series of functions calls the next on success.
 	If the process fails at any point in the waterfall, the program calls
 	sendOSCMessage('failure'), but if it reaches the end of the process
-	successfully, it calls sendOSCMessage(imageUUID).
+	successfully, it calls sendOSCMessage(mediaUUID).
 
 	Step 1: aws_s3.saveImageOnS3(image_string)
 	Step 2: aws_s3.getAndReturnSignedURL(object_key)
@@ -96,23 +100,20 @@ var aws_s3 = (function() {
 	var s3 = new AWS.S3(); 
 
 	return {
-		saveImageOnS3: function(image_string) {
-			fs.readFile(image_string, function (err, data) {
+		saveMediaOnS3: function(media_string) {
+			fs.readFile(media_string, function (err, data) {
 			  if (err) { 
 			  	sendOSCMessage('failure'); 
 			  } else {
-			  	imageUUID = generateUUID();		// globar var used in file stamp and msg back to client
-			  	console.log('converting to base64');
-			  	var base64data = new Buffer(data, 'binary');
+			  	mediaUUID = generateUUID();		// globar var used in file stamp and msg back to client
 			  	var file_stamp = generateFileStamp();
-				  var object_key = 'Store_' + STORE_ID + '/' + file_stamp + '.jpg';
+				  var object_key = 'store_' + STORE_ID + '/' + file_stamp + '.mp4';
 
 					var params = {
 						Bucket: config.settings.bucket, 
 						Key: object_key, 
-						Body: base64data,
-						ContentEncoding: 'base64',	// may or may not be required
-					  ContentType: 'image/jpeg'
+						Body: data,
+					  ContentType: 'video/mp4'
 					};
 
 					s3.putObject(params, function(err, data) {
@@ -131,7 +132,7 @@ var aws_s3 = (function() {
 		getAndReturnSignedURL: function(object_key) {
 			// URL should expire in 
 			var params = {
-				Bucket: bucket,
+				Bucket: BUCKET,
 				Key: object_key,
 				Expires: EXPIRE_TIME
 			}
@@ -150,10 +151,10 @@ var aws_s3 = (function() {
 })();
 
 function postMetadataToGateway(URL) {
-	console.log('Attempting to save image data in Photo Booth Gateway');
+	console.log('Attempting to save media data in Photo Booth Gateway');
 
 	var tempObject = { 
-		'UUID': UUID, 
+		'UUID': mediaUUID, 
 		'insert_date': new Date(),
 		'media': URL,			
 		'store_id': 'Store ' + STORE_ID,
@@ -166,22 +167,20 @@ function postMetadataToGateway(URL) {
     json: true,
     body: tempObject
 	}, function (error, response, body) {
-		console.log(response);
+		// console.log(response);
 		if (!error && response.statusCode == 200) {
-	    	console.log('success: ' + response);
-			console.log('Saved file data in Photo Booth Gateway');
-			if (success_callback) { 
-				sendOSCMessage('uploaded', imageUUID); 
-			}
+	    	// console.log('success: ' + response);
+			console.log('Saved media data in Photo Booth Gateway');
+			sendOSCMessage('uploaded', mediaUUID); 
 			makeKeenMetricsEntry({ 
 				'store': 'Store ' + STORE_ID,
 				'media': MEDIA_TYPE,
-				'image_id': imageUUID 
+				'image_id': mediaUUID 
 			});
 	  } else {
-		console.log('Failed to save image data in Photo Booth Gateway: ' + response);
-		console.log('Desc: ' + error);
-		sendOSCMessage('failure', '');
+			console.log('Failed to save media data in Photo Booth Gateway: ' + response);
+			console.log('Desc: ' + error);
+			sendOSCMessage('failure', '');
 	  }
 	});
 }
@@ -208,7 +207,7 @@ function generateFileStamp(UUID) {
 	var hours = addStringDigit(date.getHours().toString());
 	var minutes = addStringDigit(date.getMinutes().toString());
 
-	var file_stamp = STORE_ID.toString() + month.toString() + day.toString() + hours.toString() + minutes.toString() + '_' + UUID;
+	var file_stamp = STORE_ID.toString() + month.toString() + day.toString() + hours.toString() + minutes.toString() + '_' + mediaUUID;
 
 	function addStringDigit(tempString) {
 		if (tempString.length === 1) { tempString = '0' + tempString; }
@@ -225,12 +224,12 @@ function makeKeenMetricsEntry (obj) {
     json: true,
     body: obj
 	}, function (error, response, body) {
-		console.log(response);
-		if (!error && response.statusCode == 200) {
+		// console.log(response);
+		if (!error) {
 	    // console.log('Posted event data to Keen.io');
 			// console.log(textStatus);
 	  } else {
-			console.log('Failed to save event data in Keen.io: ' + textStatus);
+			console.log('Failed to save event data in Keen.io: ' + response.statusCode);
 	  }
 	});
 }
