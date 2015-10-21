@@ -4,7 +4,7 @@
 void ofApp::setup(){
     ofDisableArbTex();
     
-    ofSetFrameRate(30);
+    ofSetFrameRate(60);
     vidGrabber.setDesiredFrameRate(30);
     vidGrabber.initGrabber(640, 480);
     
@@ -346,7 +346,7 @@ void ofApp::stopRecording(){
     vidRecorderMP4Distort.close();
     
     //give the file time to close. TODO: play with this value
-    ofSleepMillis(100);
+    ofSleepMillis(1000);
     
     //signal via osc that we've saved a new set of videos
     ofxOscMessage m;
