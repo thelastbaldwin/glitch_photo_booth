@@ -50,7 +50,7 @@ function getOSCMessage(msg){
 		};
 
 	}catch(error){
-		console.log("invalid OSC packet");
+		print("invalid OSC packet");
 	}
 }
 
@@ -59,7 +59,7 @@ receiveSocket.on('message', function(message, remote){
 	aws_s3.saveMediaOnS3(OUTPUT_DIR + oscData.distortedMovie);
 	// aws_s3.saveMediaOnS3(OUTPUT_DIR + 'test.mp4');
 
-	console.log('filename: ', oscData.distortedMovie);
+	print('filename: ' + oscData.distortedMovie);
 
 	/* 
 		message: {
@@ -107,6 +107,7 @@ var aws_s3 = (function() {
 		saveMediaOnS3: function(media_string) {
 			fs.readFile(media_string, function (err, data) {
 			  if (err) { 
+			  	print('error uploading to s3: ' + err);
 			  	sendOSCMessage('failure'); 
 			  } else {
 			  	mediaUUID = generateUUID();		// globar var used in file stamp and msg back to client
@@ -122,10 +123,10 @@ var aws_s3 = (function() {
 
 					s3.putObject(params, function(err, data) {
 						if (err) { 
-							console.log('Error putting object on S3: ', err); 
+							print('Error putting object on S3: ' + err); 
 							sendOSCMessage('failure');
 						} else { 
-							console.log('Placed object on S3: ', object_key); 
+							print('Placed object on S3: ' + object_key); 
 							aws_s3.getAndReturnSignedURL(object_key);
 						}  
 					});
@@ -143,10 +144,10 @@ var aws_s3 = (function() {
 
 			s3.getSignedUrl('getObject', params, function(err, url) {
 				if (err) {
-					console.log('Error getting signed URL from S3: ', err);
+					print('Error getting signed URL from S3: ' + err);
 					sendOSCMessage('failure');
 				} else {
-					console.log('Returned signed URL: ', url);
+					print('Returned signed URL: ' +  url);
 					postMetadataToGateway(url);
 				}
 			});
@@ -155,7 +156,7 @@ var aws_s3 = (function() {
 })();
 
 function postMetadataToGateway(URL) {
-	console.log('Attempting to save media data in Photo Booth Gateway');
+	print('Attempting to save media data in Photo Booth Gateway');
 
 	var tempObject = { 
 		'UUID': mediaUUID, 
@@ -171,21 +172,21 @@ function postMetadataToGateway(URL) {
     json: true,
     body: tempObject
 	}, function (error, response, body) {
-		// console.log(response);
+		// print(response);
 		if (!error && response.statusCode == 200) {
-	    	// console.log('success: ' + response);
-			console.log('Saved media data in Photo Booth Gateway');
+	    	// print('success: ' + response);
+			print('Saved media data in Photo Booth Gateway: ' + mediaUUID);
 			sendOSCMessage('uploaded', mediaUUID); 
 			makeKeenMetricsEntry({ 
 				'store': 'Store ' + STORE_ID,
 				'media': MEDIA_TYPE,
 				'image_id': mediaUUID 
 			});
-	  } else {
-			console.log('Failed to save media data in Photo Booth Gateway: ' + response);
-			console.log('Desc: ' + error);
+	  	} else {
+			print('Failed to save media data in Photo Booth Gateway: ' + response);
+			print('Desc: ' + error);
 			sendOSCMessage('failure', '');
-	  }
+	  	}
 	});
 }
 // === END WATERFALL
@@ -228,13 +229,19 @@ function makeKeenMetricsEntry (obj) {
     json: true,
     body: obj
 	}, function (error, response, body) {
-		// console.log(response);
+		// print(response);
 		if (!error) {
-	    // console.log('Posted event data to Keen.io');
-			// console.log(textStatus);
+	    // print('Posted event data to Keen.io');
+			// print(textStatus);
 	  } else {
 			console.log('Failed to save event data in Keen.io: ' + response.statusCode);
 	  }
 	});
 }
+
+function print(message){
+	console.log(Date() + ': ' + message);
+}
 // === END HELPERS
+
+print("Server started");

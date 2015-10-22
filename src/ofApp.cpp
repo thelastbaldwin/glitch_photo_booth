@@ -1,26 +1,21 @@
 #include "ofApp.h"
 
 //--------------------------------------------------------------
-void ofApp::setup(){
+void ofApp::setup(){    
     ofDisableArbTex();
     
     ofSetFrameRate(60);
     vidGrabber.setDesiredFrameRate(30);
     vidGrabber.initGrabber(640, 480);
     
-    fileName = "testMovie";
-    
     // override the default codecs if you like
     // run 'ffmpeg -codecs' to find out what your implementation supports (or -formats on some older versions)
     string bitRate = "1000k";
-    //    vidRecorder.setVideoCodec("libx264");
     vidRecorderMP4.setVideoBitrate(bitRate);
     vidRecorderMP4.setVideoCodec("libx264");
     vidRecorderMP4Distort.setVideoBitrate(bitRate);
     vidRecorderMP4Distort.setVideoCodec("libx264");
     
-    isRecording = false;
-    isProcessing = false;
     ofEnableAlphaBlending();
     
     //shader stuff
@@ -94,6 +89,8 @@ void ofApp::setup(){
     // call setupArduino()
     ofAddListener(arduino.EInitialized, this, &ofApp::setupArduino);
     isArduinoSetup	= false;	// flag so we setup arduino when its ready, you don't need to touch this :)
+    
+    programState = READY;
 }
 
 //--------------------------------------------------------------
@@ -141,17 +138,19 @@ void ofApp::update(){
         
         // check for mouse moved message
         if(m.getAddress() == "/uploaded"){
-            // TODO: make handle message method
-            cout << "code received: " << m.getArgAsString(0) << endl;
+            code = m.getArgAsString(0);
+            cout << "code received: " << code << endl;
+            programState = FINISHED;
         }if(m.getAddress() == "/heartbeat"){
             cout << "heartbeat received" << endl;
         }
         if(m.getAddress() == "/failure"){
             cout << "error!" << endl;
+            programState = ERROR;
         }
     }
     
-    if(isRecording){
+    if(programState == RECORDING){
         long long now = ofGetElapsedTimeMillis();
         if(mark - now <= 0){
             stopRecording();
@@ -160,7 +159,7 @@ void ofApp::update(){
     }
     
     vidGrabber.update();
-    if(vidGrabber.isFrameNew() && isRecording){
+    if(vidGrabber.isFrameNew() && programState == RECORDING){
         if( !vidRecorderMP4.addFrame(vidGrabber.getPixelsRef())){
             ofLogWarning("This frame was not added to the mp4 recorder!");
         }
@@ -271,8 +270,16 @@ void ofApp::draw(){
     ofRect(videoBottomRight.x - margin - longEdge, videoBottomRight.y - margin - shortEdge, longEdge, shortEdge);
     ofRect(videoBottomRight.x - margin - shortEdge, videoBottomRight.y - margin - longEdge, shortEdge, longEdge);
     
+    string message;
+    if(programState == READY){
+        message = "Press Record to create a 6 second video. \nUse the dials below to change the effects";
+        drawButton(ofVec2f(videoBottomRight.x - 50, videoBottomRight.y + 60));
+    }
+    
     //timer
-    if(isRecording){
+    else if(programState == RECORDING){
+        message = "Your video is now recording";
+        
         ofPushStyle();
         ofSetColor(255, 0, 0);
         openSansLarge.drawString("REC", videoTopRight.x - margin * 5 - 60, videoTopRight.y + margin * 4 + 10);
@@ -288,22 +295,18 @@ void ofApp::draw(){
         
         ofPopStyle();
     }
-    
-    string message;
-    if(!isProcessing && !isRecording){
-        message = "Press Record to create a 6 second video. \nUse the dials below to change the effects";
-    }
-    if(isRecording){
-        message = "Your video is now recording";
-    }
-    if(isProcessing){
+    else if(programState == PROCESSING){
         message = "We are processing your video. Please wait.";
     }
-    openSansRegular.drawString(message, videoBottomLeft.x, videoBottomLeft.y +50);
-    
-    if(!isProcessing && !isRecording){
+    else if(programState == FINISHED){
+        message = "Please text " + code + " to receive your video.";
+        drawButton(ofVec2f(videoBottomRight.x - 50, videoBottomRight.y + 60));
+    }else if(programState == ERROR){
+        message = "There was a problem uploading your video, please try again";
         drawButton(ofVec2f(videoBottomRight.x - 50, videoBottomRight.y + 60));
     }
+
+    openSansRegular.drawString(message, videoBottomLeft.x, videoBottomLeft.y +50);
     
     if( hideGui ){
 //        ofShowCursor();
@@ -327,10 +330,12 @@ void ofApp::keyPressed(int key){
 
 //--------------------------------------------------------------
 void ofApp::startRecording(const unsigned long long duration){
-    isRecording = !isRecording;
+    programState = RECORDING;
+    
+    
     mark = ofGetElapsedTimeMillis() + duration;
-    if(isRecording && !vidRecorderMP4.isInitialized() && !vidRecorderMP4Distort.isInitialized()) {
-        lastFile = fileName+ofGetTimestampString();
+    if(programState == RECORDING && !vidRecorderMP4.isInitialized() && !vidRecorderMP4Distort.isInitialized()) {
+        lastFile = ofGetTimestampString();
         vidRecorderMP4.setupCustomOutput(vidGrabber.getWidth(), vidGrabber.getHeight(), 30, 0, 0, "-vcodec libx264 -b 1000k -pix_fmt yuv420p -f mp4 " + ofFilePath::getAbsolutePath(lastFile + ".mp4"), true, false); //the last booleans sync the video timing to the main thread
         vidRecorderMP4Distort.setupCustomOutput(vidGrabber.getWidth(), vidGrabber.getHeight(), 30, 0, 0, "-vcodec libx264 -b 1000k -pix_fmt yuv420p -f mp4 " + ofFilePath::getAbsolutePath(lastFile) + "_distorted.mp4", true, false); //the last booleans sync the video timing to the main thread
         
@@ -341,12 +346,13 @@ void ofApp::startRecording(const unsigned long long duration){
 
 //--------------------------------------------------------------
 void ofApp::stopRecording(){
-    isRecording = false;
     vidRecorderMP4.close();
     vidRecorderMP4Distort.close();
     
     //give the file time to close. TODO: play with this value
     ofSleepMillis(1000);
+    
+    programState = PROCESSING;
     
     //signal via osc that we've saved a new set of videos
     ofxOscMessage m;
@@ -355,6 +361,8 @@ void ofApp::stopRecording(){
     m.addStringArg(lastFile + "_distorted.mp4");
     m.addFloatArg(ofGetElapsedTimef());
     sender.sendMessage(m);
+    
+//    programState == FINISHED;
 }
 
 string ofApp::generateTimeStamp(unsigned long long time){
@@ -383,7 +391,7 @@ void ofApp::keyReleased(int key){
     
     if(key=='r'){
         //TODO: remove stop/start functionality
-        if(!isRecording){
+        if(programState != RECORDING){
             startRecording(DURATION);
         }
     }
@@ -394,6 +402,9 @@ void ofApp::keyReleased(int key){
     }
     if(key=='h'){
         hideGui = !hideGui;
+    }
+    if(key=='n'){
+        programState == READY;
     }
 }
 
@@ -467,7 +478,7 @@ void ofApp::mouseReleased(int x, int y, int button){
     ofVec2f p1(x, y);
     ofVec2f buttonCenter(670, 540); //TODO: make the button center and important points a struct
     
-    if(!isRecording && p1.distance(buttonCenter) < buttonSize){
+    if((programState == READY || programState == FINISHED || programState == ERROR) && p1.distance(buttonCenter) < buttonSize){
         startRecording(DURATION);
     }
 }

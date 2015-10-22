@@ -11,8 +11,11 @@ project.pbxproj
 xcshareddata/**
 node_modules/
 **ffmpeg_compiled/
-bin/**/*.mp4
-bin/**/*.mov
-*.log
+glitch_photo_booth
+glitch_photo_booth/
+glitch_photo_boothDebug
+glitch_photo_boothDebug/
+*.mp4
+*.mov
 bin/server/creds/
 bin/server/node_modules/

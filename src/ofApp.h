@@ -62,12 +62,11 @@ public:
     ofxVideoRecorder    vidRecorderMP4;
     ofxVideoRecorder    vidRecorderMP4Distort;
 
-    bool isRecording;
-    bool isProcessing;
-    long long mark;
+    long long mark; //make this specific to recording because we need a new timer
     string fileName;
     string fileExt;
     string lastFile;
+    string code;
     
     ofFbo badTVFbo;
     ofFbo rgbShiftFbo;
@@ -85,4 +84,16 @@ public:
     void setupArduino(const int & version);
     void analogPinChanged(const int & pinNum);
     void updateArduino();
+    
+private:
+    int programState;
+    string serverPID; //process ID for node server
+    
+    enum States{
+        READY,
+        RECORDING,
+        PROCESSING,
+        FINISHED,
+        ERROR
+    };
 };
