@@ -1,7 +1,8 @@
 #include "ofApp.h"
 
 //--------------------------------------------------------------
-void ofApp::setup(){    
+void ofApp::setup(){
+    
     ofDisableArbTex();
     
     ofSetFrameRate(60);
@@ -130,9 +131,7 @@ void ofApp::exit() {
 
 //--------------------------------------------------------------
 void ofApp::update(){
-    if(isArduinoSetup){
-        arduino.update();
-    }
+    arduino.update();
     
     // check for waiting messages
     while(receiver.hasWaitingMessages()){
