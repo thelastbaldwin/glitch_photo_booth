@@ -1,7 +1,6 @@
-*
-
 .DS_Store
-
+log.txt
+pid.txt
 *.app
 *.xcodeproj
 *.pbxproj
@@ -9,7 +8,6 @@
 project.pbxproj
 *xcworkspace/
 xcshareddata/**
-node_modules/
 **ffmpeg_compiled/
 glitch_photo_booth
 glitch_photo_booth/
@@ -17,5 +15,5 @@ glitch_photo_boothDebug
 glitch_photo_boothDebug/
 *.mp4
 *.mov
-bin/server/creds/
-bin/server/node_modules/
+creds/
+node_modules/

@@ -45,6 +45,7 @@ void ofApp::setup(){
     staticShader.load("shaders/passthrough_vert.c", "shaders/static_frag.c");
     
     //gui stuff
+    hideGui = true;
     BadTV.setName("Bad TV");
     BadTV.add(thickDistort.set("Thick Distort", 0.1, 0.1, 20));
     BadTV.add(fineDistort.set("Fine Distort", 0.1, 0.1, 20));
@@ -80,6 +81,9 @@ void ofApp::setup(){
     //OSC
     receiver.setup(RECEIVE_PORT);
     sender.setup("127.0.0.1", SEND_PORT);
+    
+    //attach a listener for the timer
+    ofAddListener(timer.TIMER_REACHED, this, &ofApp::timerFinished);
     
     //arduino stuff
     arduino.connect("/dev/tty.usbmodem1411", 57600);
@@ -141,20 +145,14 @@ void ofApp::update(){
             code = m.getArgAsString(0);
             cout << "code received: " << code << endl;
             programState = FINISHED;
+            timer.setup(90000, false);
         }if(m.getAddress() == "/heartbeat"){
             cout << "heartbeat received" << endl;
         }
         if(m.getAddress() == "/failure"){
             cout << "error!" << endl;
             programState = ERROR;
-        }
-    }
-    
-    if(programState == RECORDING){
-        long long now = ofGetElapsedTimeMillis();
-        if(mark - now <= 0){
-            stopRecording();
-            return;
+            timer.setup(10000, false);
         }
     }
     
@@ -276,6 +274,7 @@ void ofApp::draw(){
         drawButton(ofVec2f(videoBottomRight.x - 50, videoBottomRight.y + 60));
     }
     
+    
     //timer
     else if(programState == RECORDING){
         message = "Your video is now recording";
@@ -285,7 +284,7 @@ void ofApp::draw(){
         openSansLarge.drawString("REC", videoTopRight.x - margin * 5 - 60, videoTopRight.y + margin * 4 + 10);
         ofCircle(videoTopRight.x - margin * 4, videoTopRight.y + margin * 4, 10);
         
-        string timestamp = generateTimeStamp(mark - ofGetElapsedTimeMillis());
+        string timestamp = generateTimeStamp(timer.getTimeLeftInMillis());
         openSansLarge.drawString(timestamp, videoBottomLeft.x + staticFbo.getWidth()/2 - 60, videoBottomLeft.y - margin);
         
         //overlay
@@ -299,20 +298,25 @@ void ofApp::draw(){
         message = "We are processing your video. Please wait.";
     }
     else if(programState == FINISHED){
-        message = "Please text " + code + " to receive your video.";
+        // for testing, use 224-231-6799 to text for the video (URL). But in production, we use 206-569-5133
+        stringstream ss;
+        ss << "Your video is ready. Please text " << code << " to\n" <<
+         "(224)231-6799 receive your video. This code \nwill disappear in " <<
+        int(timer.getTimeLeftInSeconds()) << " seconds.";
+        message = ss.str();
         drawButton(ofVec2f(videoBottomRight.x - 50, videoBottomRight.y + 60));
     }else if(programState == ERROR){
-        message = "There was a problem uploading your video, please try again";
+        message = "There was a problem uploading your video.\nPlease try again.";
         drawButton(ofVec2f(videoBottomRight.x - 50, videoBottomRight.y + 60));
     }
 
     openSansRegular.drawString(message, videoBottomLeft.x, videoBottomLeft.y +50);
     
-    if( hideGui ){
-//        ofShowCursor();
+    if( !hideGui ){
         gui.draw();
+        ofShowCursor();
     }else{
-//        ofHideCursor();
+        ofHideCursor();
     }
 }
 
@@ -323,6 +327,23 @@ void ofApp::clearFbo(ofFbo &fbo){
     fbo.end();
 }
 
+//--------------------------------------------------------------
+void ofApp::timerFinished(ofEventArgs &args){
+    switch(programState){
+        case RECORDING:
+            stopRecording();
+            break;
+        case PROCESSING:
+            programState = ERROR;
+            timer.setup(5000, false);
+            break;
+        case ERROR:
+        case FINISHED:
+            programState = READY;
+            break;
+    }
+}
+
 
 //--------------------------------------------------------------
 void ofApp::keyPressed(int key){
@@ -330,10 +351,9 @@ void ofApp::keyPressed(int key){
 
 //--------------------------------------------------------------
 void ofApp::startRecording(const unsigned long long duration){
+    timer.setup(6000, false);
     programState = RECORDING;
     
-    
-    mark = ofGetElapsedTimeMillis() + duration;
     if(programState == RECORDING && !vidRecorderMP4.isInitialized() && !vidRecorderMP4Distort.isInitialized()) {
         lastFile = ofGetTimestampString();
         vidRecorderMP4.setupCustomOutput(vidGrabber.getWidth(), vidGrabber.getHeight(), 30, 0, 0, "-vcodec libx264 -b 1000k -pix_fmt yuv420p -f mp4 " + ofFilePath::getAbsolutePath(lastFile + ".mp4"), true, false); //the last booleans sync the video timing to the main thread
@@ -352,6 +372,8 @@ void ofApp::stopRecording(){
     //give the file time to close. TODO: play with this value
     ofSleepMillis(1000);
     
+    //gives us 10 seconds to upload the video
+    timer.setup(10000, false);
     programState = PROCESSING;
     
     //signal via osc that we've saved a new set of videos
@@ -361,8 +383,6 @@ void ofApp::stopRecording(){
     m.addStringArg(lastFile + "_distorted.mp4");
     m.addFloatArg(ofGetElapsedTimef());
     sender.sendMessage(m);
-    
-//    programState == FINISHED;
 }
 
 string ofApp::generateTimeStamp(unsigned long long time){

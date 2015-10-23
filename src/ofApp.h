@@ -4,6 +4,7 @@
 #include "ofxVideoRecorder.h"
 #include "ofxGui.h"
 #include "ofxOsc.h"
+#include "ofxTimer.h"
 
 class ofApp : public ofBaseApp{
     
@@ -32,7 +33,7 @@ public:
     const int RECEIVE_PORT = 12345;
     const int SEND_PORT = 12346;
     ofVec2f buttonCenter;
-    
+
     ofMesh quad;
     
     bool hideGui;
@@ -62,7 +63,6 @@ public:
     ofxVideoRecorder    vidRecorderMP4;
     ofxVideoRecorder    vidRecorderMP4Distort;
 
-    long long mark; //make this specific to recording because we need a new timer
     string fileName;
     string fileExt;
     string lastFile;
@@ -85,9 +85,12 @@ public:
     void analogPinChanged(const int & pinNum);
     void updateArduino();
     
+    void timerFinished(ofEventArgs& arg);
+    
 private:
     int programState;
     string serverPID; //process ID for node server
+    ofxTimer timer;
     
     enum States{
         READY,
