@@ -1,0 +1,4 @@
+<config>
+	<receive_port>12345</receive_port>
+	<send_port>12346</send_port>
+</config>

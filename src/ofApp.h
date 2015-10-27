@@ -5,6 +5,7 @@
 #include "ofxGui.h"
 #include "ofxOsc.h"
 #include "ofxTimer.h"
+#include "ofxXmlSettings.h"
 
 class ofApp : public ofBaseApp{
     
@@ -26,13 +27,11 @@ public:
     void clearFbo(ofFbo& fbo);
     void startRecording(const unsigned long long duration);
     void stopRecording();
-    void sendHeartbeat(ofEventArgs &args);
+    void sendHeartbeat();
     string generateTimeStamp(unsigned long long time);
     void drawButton(const ofVec2f& center);
     const int buttonSize = 50;
     const int DURATION = 6000;
-    const int RECEIVE_PORT = 12345;
-    const int SEND_PORT = 12346;
     ofVec2f buttonCenter;
 
     ofMesh quad;

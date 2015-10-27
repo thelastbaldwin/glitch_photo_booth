@@ -7,14 +7,15 @@ var express = require('express'),
 	proxy = require('proxy-agent'),
 	request = require('request'),
 	fs = require('fs'),
+	parser = require('xml2js').Parser(),
 	config = require('./creds/config'),
 	sendSocket = dgram.createSocket({type:"udp4",reuseAddr:true}),
 	receiveSocket = dgram.createSocket({type:"udp4",reuseAddr:true}),
-	mediaUUID;
+	mediaUUID,
+	SEND_PORT,
+	RECEIVE_PORT;
 
-const SEND_PORT = 12345,
-	RECEIVE_PORT = 12346,
-	OUTPUT_DIR = '../data/',
+const OUTPUT_DIR = '../data/',
 	MEDIA_TYPE = 'video',				// set to 'photo' for MMS, 'video' for SMS
 	STORE_ID = '1',							// store number: '1', '220', etc.
 	EXPIRE_TIME = 2592000,			// S3 file expiration, in milliseconds: 1 mo. = 60 * 60 * 24 * 30 = 2592000
@@ -28,8 +29,19 @@ AWS.config.update({
   httpOptions: { agent: proxy('http://webproxy.nordstrom.net:8181') }
 });
 
-sendSocket.bind(SEND_PORT);
-receiveSocket.bind(RECEIVE_PORT);
+
+var buffer = fs.readFileSync("../data/ports.xml");
+
+parser.parseString(buffer.toString(), function(err, result){
+	//swap the send and recieve ports becuase we're reading
+	// the config for the main application
+	if(!err){
+		RECEIVE_PORT = result.config.send_port[0];
+		SEND_PORT = result.config.receive_port[0];
+		sendSocket.bind(SEND_PORT);
+		receiveSocket.bind(RECEIVE_PORT);
+	}
+});
 
 
 function getOSCMessage(msg){
@@ -88,6 +100,7 @@ function sendOSCMessage(address, code){
 }
 
 var sendInterval = setInterval(function(){
+	print('Sending heartbeat');
 	sendOSCMessage('heartbeat', '1337H4X04L0L0L0L0L');
 }, 10000);
 

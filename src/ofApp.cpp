@@ -80,15 +80,13 @@ void ofApp::setup(){
     openSansRegular.loadFont("OpenSans-Regular.ttf", 16);
     
     //OSC
-    receiver.setup(RECEIVE_PORT);
-    sender.setup("127.0.0.1", SEND_PORT);
+    ofxXmlSettings config;
+    config.loadFile("ports.xml");
+    receiver.setup(config.getValue("config:receive_port", 12345));
+    sender.setup("0.0.0.0", config.getValue("config:send_port", 12346));
     
     //attach a listener for the timer
     ofAddListener(timer.TIMER_REACHED, this, &ofApp::timerFinished);
-    
-    //heartbeat timer
-    heartbeatTimer.setup(5000, true);
-    ofAddListener(heartbeatTimer.TIMER_REACHED, this, &ofApp::sendHeartbeat);
     
     //arduino stuff
     string arduinoBoardAddress = ofSystem("ls /dev/ | grep tty.usb");
@@ -154,6 +152,7 @@ void ofApp::update(){
             timer.setup(90000, false);
         }if(m.getAddress() == "/heartbeat"){
             cout << "heartbeat received" << endl;
+            sendHeartbeat();
         }
         if(m.getAddress() == "/failure"){
             cout << "error!" << endl;
@@ -391,7 +390,7 @@ void ofApp::stopRecording(){
     sender.sendMessage(m);
 }
 
-void ofApp::sendHeartbeat(ofEventArgs &args){
+void ofApp::sendHeartbeat(){
     ofxOscMessage m;
     m.setAddress("/heartbeat");
     sender.sendMessage(m);
