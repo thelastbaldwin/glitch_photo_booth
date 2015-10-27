@@ -26,6 +26,7 @@ public:
     void clearFbo(ofFbo& fbo);
     void startRecording(const unsigned long long duration);
     void stopRecording();
+    void sendHeartbeat(ofEventArgs &args);
     string generateTimeStamp(unsigned long long time);
     void drawButton(const ofVec2f& center);
     const int buttonSize = 50;
@@ -90,7 +91,7 @@ public:
 private:
     int programState;
     string serverPID; //process ID for node server
-    ofxTimer timer;
+    ofxTimer timer, heartbeatTimer;
     
     enum States{
         READY,

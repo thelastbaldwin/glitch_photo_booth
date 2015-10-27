@@ -86,8 +86,15 @@ void ofApp::setup(){
     //attach a listener for the timer
     ofAddListener(timer.TIMER_REACHED, this, &ofApp::timerFinished);
     
+    //heartbeat timer
+    heartbeatTimer.setup(5000, true);
+    ofAddListener(heartbeatTimer.TIMER_REACHED, this, &ofApp::sendHeartbeat);
+    
     //arduino stuff
-    arduino.connect("/dev/tty.usbmodem1411", 57600);
+    string arduinoBoardAddress = ofSystem("ls /dev/ | grep tty.usb");
+    //need to remove newline and null characters
+    arduinoBoardAddress = arduinoBoardAddress.substr(0, arduinoBoardAddress.length()-2);
+    arduino.connect(arduinoBoardAddress, 57600);
     
     // listen for EInitialized notification. this indicates that
     // the arduino is ready to receive commands and it is safe to
@@ -334,7 +341,7 @@ void ofApp::timerFinished(ofEventArgs &args){
             break;
         case PROCESSING:
             programState = ERROR;
-            timer.setup(5000, false);
+            timer.setup(10000, false);
             break;
         case ERROR:
         case FINISHED:
@@ -369,7 +376,7 @@ void ofApp::stopRecording(){
     vidRecorderMP4Distort.close();
     
     //give the file time to close. TODO: play with this value
-    ofSleepMillis(1000);
+    ofSleepMillis(3000);
     
     //gives us 10 seconds to upload the video
     timer.setup(10000, false);
@@ -381,6 +388,12 @@ void ofApp::stopRecording(){
     m.addStringArg(lastFile + ".mp4");
     m.addStringArg(lastFile + "_distorted.mp4");
     m.addFloatArg(ofGetElapsedTimef());
+    sender.sendMessage(m);
+}
+
+void ofApp::sendHeartbeat(ofEventArgs &args){
+    ofxOscMessage m;
+    m.setAddress("/heartbeat");
     sender.sendMessage(m);
 }
 

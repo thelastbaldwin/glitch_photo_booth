@@ -31,23 +31,33 @@ AWS.config.update({
 sendSocket.bind(SEND_PORT);
 receiveSocket.bind(RECEIVE_PORT);
 
+
 function getOSCMessage(msg){
 	//extract relevant data from OSC Message
 	var oscMessage = osc.fromBuffer(msg);
 	try {
 		// console.log(oscMessage);
 		// translate osc buffer into javascript object
+
 		var element = oscMessage.elements[0],
-			address = element.address,
-			args = element.args,
+			address = element.address;
+
+		if(address === "/video"){
+			var	args = element.args,
 			cleanMovie = args[0].value,
 			distortedMovie = args[1].value;
 
-		return {
-			address: address,
-			cleanMovie: cleanMovie,
-			distortedMovie: distortedMovie
-		};
+			return {
+				type: 'video',
+				address: address,
+				cleanMovie: cleanMovie,
+				distortedMovie: distortedMovie
+			};
+		}else if(address === "/heartbeat"){
+			return {
+				type: 'heartbeat'
+			}
+		}
 
 	}catch(error){
 		print("invalid OSC packet");
@@ -56,18 +66,12 @@ function getOSCMessage(msg){
 
 receiveSocket.on('message', function(message, remote){
 	var oscData = getOSCMessage(message);
-	aws_s3.saveMediaOnS3(OUTPUT_DIR + oscData.distortedMovie);
-	// aws_s3.saveMediaOnS3(OUTPUT_DIR + 'test.mp4');
-
-	print('filename: ' + oscData.distortedMovie);
-
-	/* 
-		message: {
-		address: '/video',
-		cleanMovie: 'filename.mp4',
-		distortedMovie: 'filename_distorted.mp4'
+	if(oscData.type === 'video'){
+		aws_s3.saveMediaOnS3(OUTPUT_DIR + oscData.distortedMovie);
+		print('filename: ' + oscData.distortedMovie);
+	}else if(oscData.type === 'heartbeat'){
+		print('heartbeat received.');
 	}
-	*/
 });
 
 function sendOSCMessage(address, code){
