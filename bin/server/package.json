@@ -6,10 +6,10 @@
   "dependencies": {
     "aws-sdk": "^2.2.9",
     "express": "^4.13.3",
-    "fluent-ffmpeg": "^2.0.1",
     "osc-min": "^0.2.0",
     "proxy-agent": "^2.0.0",
-    "request": "^2.65.0"
+    "request": "^2.65.0",
+    "xml2js": "^0.4.13"
   },
   "devDependencies": {},
   "scripts": {

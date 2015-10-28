@@ -35,7 +35,8 @@ in vec2 vUv;
 out vec4 outputColor;
 
 void main() {
-	vec4 cTextureScreen = texture( tDiffuse, vUv );
+	vec2 flippedY = vec2(1.0 - vUv.x, vUv.y);
+	vec4 cTextureScreen = texture( tDiffuse, flippedY );
 	float x = vUv.x * vUv.y * time *  1000.0;
 	x = mod( x, 13.0 ) * mod( x, 123.0 );
 	float dx = mod( x, 0.01 );

@@ -5,16 +5,13 @@ void ofApp::setup(){
     
     ofDisableArbTex();
     
-    ofSetFrameRate(60);
+    ofSetFrameRate(30);
     vidGrabber.setDesiredFrameRate(30);
     vidGrabber.initGrabber(640, 480);
     
     // override the default codecs if you like
     // run 'ffmpeg -codecs' to find out what your implementation supports (or -formats on some older versions)
-    string bitRate = "1000k";
-    vidRecorderMP4.setVideoBitrate(bitRate);
-    vidRecorderMP4.setVideoCodec("libx264");
-    vidRecorderMP4Distort.setVideoBitrate(bitRate);
+    vidRecorderMP4Distort.setVideoBitrate("1600k");
     vidRecorderMP4Distort.setVideoCodec("libx264");
     
     ofEnableAlphaBlending();
@@ -130,7 +127,6 @@ void ofApp::setupArduino(const int & version) {
 }
 
 void ofApp::exit() {
-    vidRecorderMP4.close();
     vidRecorderMP4Distort.close();
 }
 
@@ -163,10 +159,6 @@ void ofApp::update(){
     
     vidGrabber.update();
     if(vidGrabber.isFrameNew() && programState == RECORDING){
-        if( !vidRecorderMP4.addFrame(vidGrabber.getPixelsRef())){
-            ofLogWarning("This frame was not added to the mp4 recorder!");
-        }
-        
         
         ofPixels px;
         staticFbo.readToPixels(px);
@@ -176,9 +168,7 @@ void ofApp::update(){
     }
     
     // Check if the video recorder encountered any error while writing video frame or audio smaples.
-    if( vidRecorderMP4.hasVideoError()){
-        ofLogWarning("The mp4 video recorder failed to write some frames!");
-    }
+
     if(vidRecorderMP4Distort.hasVideoError()){
         ofLogWarning("The distorted mp4 video recorder failed to write some frames!");
     }
@@ -260,18 +250,6 @@ void ofApp::draw(){
     float margin = 10.0;
     float shortEdge = 3.0;
     float longEdge = 50.0;
-    //top left
-    ofRect(videoTopLeft.x + margin, videoTopLeft.y + margin, longEdge, shortEdge);
-    ofRect(videoTopLeft.x + margin, videoTopLeft.y + margin, shortEdge, longEdge);
-    //top right
-    ofRect(videoTopRight.x - margin - longEdge, videoTopRight.y + margin, longEdge, shortEdge);
-    ofRect(videoTopRight.x - margin - shortEdge, videoTopRight.y + margin, shortEdge, longEdge);
-    //bottom left
-    ofRect(videoBottomLeft.x + margin, videoBottomLeft.y - margin - shortEdge, longEdge, shortEdge);
-    ofRect(videoBottomLeft.x + margin, videoBottomLeft.y - margin - longEdge, shortEdge, longEdge);
-    //bottom right
-    ofRect(videoBottomRight.x - margin - longEdge, videoBottomRight.y - margin - shortEdge, longEdge, shortEdge);
-    ofRect(videoBottomRight.x - margin - shortEdge, videoBottomRight.y - margin - longEdge, shortEdge, longEdge);
     
     string message;
     if(programState == READY){
@@ -284,13 +262,20 @@ void ofApp::draw(){
     else if(programState == RECORDING){
         message = "Your video is now recording";
         
+        //transparent black box
+        ofPushStyle();
+        ofSetColor(0, 0, 0, 150);
+        ofRect(videoBottomLeft.x, videoBottomLeft.y - 70, videoBottomRight.x, videoBottomRight.y);
+        ofPopStyle();
+        
         ofPushStyle();
         ofSetColor(255, 0, 0);
         openSansLarge.drawString("REC", videoTopRight.x - margin * 5 - 60, videoTopRight.y + margin * 4 + 10);
         ofCircle(videoTopRight.x - margin * 4, videoTopRight.y + margin * 4, 10);
         
+        
         string timestamp = generateTimeStamp(timer.getTimeLeftInMillis());
-        openSansLarge.drawString(timestamp, videoBottomLeft.x + staticFbo.getWidth()/2 - 60, videoBottomLeft.y - margin);
+        openSansLarge.drawString(timestamp, videoBottomLeft.x + staticFbo.getWidth()/2 - 60, videoBottomLeft.y - 25);
         
         //overlay
         ofSetColor(255, 0, 0, 125 + sin(time) * 125);
@@ -306,7 +291,7 @@ void ofApp::draw(){
         // for testing, use 224-231-6799 to text for the video (URL). But in production, we use 206-569-5133
         stringstream ss;
         ss << "Your video is ready. Please text " << code << " to\n" <<
-         "(224)231-6799 receive your video. This code \nwill disappear in " <<
+         "(224) 231-6799 receive your video. This code \nwill disappear in " <<
         int(timer.getTimeLeftInSeconds()) << " seconds.";
         message = ss.str();
         drawButton(ofVec2f(videoBottomRight.x - 50, videoBottomRight.y + 60));
@@ -314,6 +299,19 @@ void ofApp::draw(){
         message = "There was a problem uploading your video.\nPlease try again.";
         drawButton(ofVec2f(videoBottomRight.x - 50, videoBottomRight.y + 60));
     }
+    
+    //top left
+    ofRect(videoTopLeft.x + margin, videoTopLeft.y + margin, longEdge, shortEdge);
+    ofRect(videoTopLeft.x + margin, videoTopLeft.y + margin, shortEdge, longEdge);
+    //top right
+    ofRect(videoTopRight.x - margin - longEdge, videoTopRight.y + margin, longEdge, shortEdge);
+    ofRect(videoTopRight.x - margin - shortEdge, videoTopRight.y + margin, shortEdge, longEdge);
+    //bottom left
+    ofRect(videoBottomLeft.x + margin, videoBottomLeft.y - margin - shortEdge, longEdge, shortEdge);
+    ofRect(videoBottomLeft.x + margin, videoBottomLeft.y - margin - longEdge, shortEdge, longEdge);
+    //bottom right
+    ofRect(videoBottomRight.x - margin - longEdge, videoBottomRight.y - margin - shortEdge, longEdge, shortEdge);
+    ofRect(videoBottomRight.x - margin - shortEdge, videoBottomRight.y - margin - longEdge, shortEdge, longEdge);
 
     openSansRegular.drawString(message, videoBottomLeft.x, videoBottomLeft.y +50);
     
@@ -359,23 +357,19 @@ void ofApp::startRecording(const unsigned long long duration){
     timer.setup(6000, false);
     programState = RECORDING;
     
-    if(programState == RECORDING && !vidRecorderMP4.isInitialized() && !vidRecorderMP4Distort.isInitialized()) {
+    if(programState == RECORDING && !vidRecorderMP4Distort.isInitialized()) {
         lastFile = ofGetTimestampString();
-        vidRecorderMP4.setupCustomOutput(vidGrabber.getWidth(), vidGrabber.getHeight(), 30, 0, 0, "-vcodec libx264 -b 1000k -pix_fmt yuv420p -f mp4 " + ofFilePath::getAbsolutePath(lastFile + ".mp4"), true, false); //the last booleans sync the video timing to the main thread
-        vidRecorderMP4Distort.setupCustomOutput(vidGrabber.getWidth(), vidGrabber.getHeight(), 30, 0, 0, "-vcodec libx264 -b 1000k -pix_fmt yuv420p -f mp4 " + ofFilePath::getAbsolutePath(lastFile) + "_distorted.mp4", true, false); //the last booleans sync the video timing to the main thread
-        
-        vidRecorderMP4.start();
+        vidRecorderMP4Distort.setupCustomOutput(vidGrabber.getWidth(), vidGrabber.getHeight(), 30, 0, 0, "-vcodec libx264 -b 1800k -pix_fmt yuv420p -preset medium -f mp4 " + ofFilePath::getAbsolutePath(lastFile) + "_distorted.mp4", true, false); //the last booleans sync the video timing to the main thread
         vidRecorderMP4Distort.start();
     }
 }
 
 //--------------------------------------------------------------
 void ofApp::stopRecording(){
-    vidRecorderMP4.close();
     vidRecorderMP4Distort.close();
     
     //give the file time to close. TODO: play with this value
-    ofSleepMillis(3000);
+    ofSleepMillis(2000);
     
     //gives us 10 seconds to upload the video
     timer.setup(10000, false);

@@ -60,7 +60,6 @@ public:
     ofParameter<float> nIntensity;
     
     ofVideoGrabber      vidGrabber;
-    ofxVideoRecorder    vidRecorderMP4;
     ofxVideoRecorder    vidRecorderMP4Distort;
 
     string fileName;
