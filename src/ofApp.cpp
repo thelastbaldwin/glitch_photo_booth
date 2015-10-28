@@ -161,7 +161,7 @@ void ofApp::update(){
     if(vidGrabber.isFrameNew() && programState == RECORDING){
         
         ofPixels px;
-        staticFbo.readToPixels(px);
+        rgbShiftFbo.readToPixels(px);
         if (!vidRecorderMP4Distort.addFrame(px)){
             ofLogWarning("This frame was not added to the distorted mp4 recorder!");
         }

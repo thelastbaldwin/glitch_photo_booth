@@ -25,9 +25,6 @@ const OUTPUT_DIR = '../data/',
 	KEEN_URL = config.settings.URLs.keen_project_URL;
 
 AWS.config.update(AWS_PARAMS);
-AWS.config.update({
-  httpOptions: { agent: proxy('http://webproxy.nordstrom.net:8181') }
-});
 
 
 var buffer = fs.readFileSync("../data/ports.xml");
@@ -102,7 +99,7 @@ function sendOSCMessage(address, code){
 var sendInterval = setInterval(function(){
 	print('Sending heartbeat');
 	sendOSCMessage('heartbeat', '1337H4X04L0L0L0L0L');
-}, 10000);
+}, 60000 * 5);
 
 // === WATERFALL
 /* 	
