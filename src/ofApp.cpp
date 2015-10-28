@@ -193,9 +193,21 @@ void ofApp::draw(){
     ofTexture tex;
     tex.loadData(vidGrabber.getPixels(), vidGrabber.getWidth(), vidGrabber.getHeight(), GL_RGB);
     
+    staticFbo.begin();
+    staticShader.begin();
+    staticShader.setUniformTexture("tDiffuse", tex, 1);
+    staticShader.setUniform1f("width", vidGrabber.width);
+    staticShader.setUniform1f("height", vidGrabber.height);
+    staticShader.setUniform1f("time", time);
+    staticShader.setUniform1f("amount", staticAmount);
+    staticShader.setUniform1f("size", size);
+    quad.draw();
+    staticShader.end();
+    staticFbo.end();
+    
     filmFbo.begin();
     filmShader.begin();
-    filmShader.setUniformTexture("tDiffuse", tex, 1);
+    filmShader.setUniformTexture("tDiffuse", staticFbo.getTextureReference(), 1);
     filmShader.setUniform1f("width", vidGrabber.width);
     filmShader.setUniform1f("height", vidGrabber.height);
     filmShader.setUniform1f("time", time);
@@ -232,19 +244,7 @@ void ofApp::draw(){
     rgbShiftShader.end();
     rgbShiftFbo.end();
     
-    staticFbo.begin();
-    staticShader.begin();
-    staticShader.setUniformTexture("tDiffuse", rgbShiftFbo.getTextureReference(), 1);
-    staticShader.setUniform1f("width", vidGrabber.width);
-    staticShader.setUniform1f("height", vidGrabber.height);
-    staticShader.setUniform1f("time", time);
-    staticShader.setUniform1f("amount", staticAmount);
-    staticShader.setUniform1f("size", size);
-    quad.draw();
-    staticShader.end();
-    staticFbo.end();
-    
-    staticFbo.draw(videoTopLeft);
+    rgbShiftFbo.draw(videoTopLeft);
     
     //corners
     float margin = 10.0;
@@ -441,7 +441,7 @@ void ofApp::analogPinChanged(const int & pinNum) {
         ROLL_SPEED,
         RGB_SHIFT,
         STATIC_AMT,
-        SCANLINE_COUNT
+        STATIC_SIZE
     };
     
     int rawValue = arduino.getAnalog(pinNum);
@@ -474,9 +474,9 @@ void ofApp::analogPinChanged(const int & pinNum) {
             mappedValue = ofMap(POT_MAX - rawValue, POT_MIN, POT_MAX, staticAmount.getMin(), staticAmount.getMax());
             staticAmount = mappedValue;
             break;
-        case SCANLINE_COUNT:
-            mappedValue = ofMap(POT_MAX - rawValue, POT_MIN, POT_MAX, count.getMin(), count.getMax());
-            count = mappedValue;
+        case STATIC_SIZE:
+            mappedValue = ofMap(POT_MAX - rawValue, POT_MIN, POT_MAX, size.getMin(), size.getMax());
+            size = mappedValue;
             break;
         default:
             break;
