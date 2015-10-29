@@ -369,7 +369,7 @@ void ofApp::stopRecording(){
     vidRecorderMP4Distort.close();
     
     //give the file time to close. TODO: play with this value
-    ofSleepMillis(2000);
+    ofSleepMillis(2500);
     
     //gives us 15 seconds to upload the video
     timer.setup(15000, false);

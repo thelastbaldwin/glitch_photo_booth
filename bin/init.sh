@@ -1,4 +1,6 @@
 #!/bin/bash
+export http_proxy="http://webproxy.nordstrom.net:8181"
+export https_proxy=${http_proxy}
 
 #terminate any currently running server processes
 cd server
@@ -18,7 +20,7 @@ sleep 5
 # log stderr to stdout
 cd server
 
-/user/local/bin/node server.js >> log.txt 2>&1 &
+/usr/local/bin/node server.js >> log.txt 2>&1 &
 
 SERVER_PID=$!
 echo $SERVER_PID > pid.txt

@@ -17,7 +17,7 @@ var express = require('express'),
 
 const OUTPUT_DIR = '../data/',
 	MEDIA_TYPE = 'video',				// set to 'photo' for MMS, 'video' for SMS
-	STORE_ID = '1',							// store number: '1', '220', etc.
+	STORE_ID = config.settings.store_id,							// store number: '1', '220', etc.
 	EXPIRE_TIME = 2592000,			// S3 file expiration, in milliseconds: 1 mo. = 60 * 60 * 24 * 30 = 2592000
 	AWS_PARAMS = config.AWS_params,
 	BUCKET = config.settings.bucket,
@@ -163,29 +163,36 @@ var aws_s3 = (function() {
 					sendOSCMessage('failure');
 				} else {
 					print('Returned signed URL: ' +  url);
-					postMetadataToGateway(url);
+					postMetadataToGateway(generateNordstromUrl(url));
 				}
 			});
 		}
 	}
 })();
 
-function postMetadataToGateway(URL) {
+function generateNordstromUrl(url){
+	//example url looks like this:
+	// https://idev-em-team.s3-us-west-2.amazonaws.com/store_1/110291237_h7rs.mp4?AWSAccessKeyId=AKIAJ562XF34DJP4TGJQ&Expires=1448739473&Signature=4uXQq%2F9z9Faq4KKOWJ0mMJFHZhU%3D
+	//we want to return everything after amazonaws.com/
+	return config.settings.shop_url + url.substr(url.search('store'));
+}
+
+function postMetadataToGateway(url) {
 	print('Attempting to save media data in Photo Booth Gateway');
 
 	var tempObject = { 
 		'UUID': mediaUUID, 
 		'insert_date': new Date(),
-		'media': URL,			
+		'media': url,
 		'store_id': 'Store ' + STORE_ID,
 		'media_type': MEDIA_TYPE
 	};
 
 	request({
-    url: API_URL + '/save',
-    method: 'POST',
-    json: true,
-    body: tempObject
+	    url: API_URL + '/save',
+	    method: 'POST',
+	    json: true,
+	    body: tempObject
 	}, function (error, response, body) {
 		// print(response);
 		if (!error && response.statusCode == 200) {
