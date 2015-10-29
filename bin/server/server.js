@@ -21,8 +21,7 @@ const OUTPUT_DIR = '../data/',
 	EXPIRE_TIME = 2592000,			// S3 file expiration, in milliseconds: 1 mo. = 60 * 60 * 24 * 30 = 2592000
 	AWS_PARAMS = config.AWS_params,
 	BUCKET = config.settings.bucket,
-	API_URL = config.settings.URLs.photobooth_gateway_URL,
-	KEEN_URL = config.settings.URLs.keen_project_URL;
+	API_URL = config.settings.URLs.photobooth_gateway_URL;
 
 AWS.config.update(AWS_PARAMS);
 
@@ -191,13 +190,8 @@ function postMetadataToGateway(URL) {
 	    	// print('success: ' + response);
 			print('Saved media data in Photo Booth Gateway: ' + mediaUUID);
 			sendOSCMessage('uploaded', mediaUUID); 
-			makeKeenMetricsEntry({ 
-				'store': 'Store ' + STORE_ID,
-				'media': MEDIA_TYPE,
-				'image_id': mediaUUID 
-			});
 	  	} else {
-			print('Failed to save media data in Photo Booth Gateway: ' + response);
+			print('Failed to save media data in Photo Booth Gateway');
 			print('Desc: ' + error);
 			sendOSCMessage('failure', '');
 	  	}
@@ -234,23 +228,6 @@ function generateFileStamp(UUID) {
 	}
 
 	return file_stamp;
-}
-
-function makeKeenMetricsEntry (obj) {
-	request({
-    url: KEEN_URL,
-    method: 'POST',
-    json: true,
-    body: obj
-	}, function (error, response, body) {
-		// print(response);
-		if (!error) {
-	    // print('Posted event data to Keen.io');
-			// print(textStatus);
-	  } else {
-			console.log('Failed to save event data in Keen.io: ' + response.statusCode);
-	  }
-	});
 }
 
 function print(message){
