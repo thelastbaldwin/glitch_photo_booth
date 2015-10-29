@@ -371,8 +371,8 @@ void ofApp::stopRecording(){
     //give the file time to close. TODO: play with this value
     ofSleepMillis(2000);
     
-    //gives us 10 seconds to upload the video
-    timer.setup(10000, false);
+    //gives us 15 seconds to upload the video
+    timer.setup(15000, false);
     programState = PROCESSING;
     
     //signal via osc that we've saved a new set of videos

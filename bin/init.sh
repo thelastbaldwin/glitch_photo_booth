@@ -18,7 +18,7 @@ sleep 5
 # log stderr to stdout
 cd server
 
-node server.js >> log.txt 2>&1 &
+/user/local/bin/node server.js >> log.txt 2>&1 &
 
 SERVER_PID=$!
 echo $SERVER_PID > pid.txt
