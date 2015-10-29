@@ -24,7 +24,9 @@ const OUTPUT_DIR = '../data/',
 	API_URL = config.settings.URLs.photobooth_gateway_URL;
 
 AWS.config.update(AWS_PARAMS);
-
+AWS.config.update({
+  httpOptions: { agent: proxy('http://webproxy.nordstrom.net:8181') }
+});
 
 var buffer = fs.readFileSync("../data/ports.xml");
 
