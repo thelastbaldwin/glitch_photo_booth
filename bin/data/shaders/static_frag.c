@@ -47,7 +47,8 @@ float rand(vec2 co){
 void main() {
 	vec2 p = vUv;
 	vec4 color = texture(tDiffuse, p);
-	float constrainedTime = mod(time, 50000);
+	//unconstrained time value causes the static layer to slowly drift up
+	float constrainedTime = mod(time, 120);
 	float xs = floor(gl_FragCoord.x / size);
 	float ys = floor(gl_FragCoord.y / size);
 	vec4 snow = vec4(rand(vec2(xs * constrainedTime,ys * constrainedTime))*amount);

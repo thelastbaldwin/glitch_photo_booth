@@ -18,7 +18,7 @@ var express = require('express'),
 const OUTPUT_DIR = '../data/',
 	MEDIA_TYPE = 'video',				// set to 'photo' for MMS, 'video' for SMS
 	STORE_ID = config.settings.store_id,							// store number: '1', '220', etc.
-	EXPIRE_TIME = 2592000,			// S3 file expiration, in milliseconds: 1 mo. = 60 * 60 * 24 * 30 = 2592000
+	EXPIRE_TIME = new Date(Date.now() + 2592000 * 1000).toString(),			// S3 file expiration, in milliseconds: 1 mo. = 60 * 60 * 24 * 30 = 2592000
 	AWS_PARAMS = config.AWS_params,
 	BUCKET = config.settings.bucket,
 	API_URL = config.settings.URLs.photobooth_gateway_URL;
