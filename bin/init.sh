@@ -1,6 +1,4 @@
 #!/bin/bash
-export http_proxy="http://webproxy.nordstrom.net:8181"
-export https_proxy=${http_proxy}
 
 #terminate any currently running server processes
 cd server

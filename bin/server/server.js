@@ -18,15 +18,12 @@ var express = require('express'),
 const OUTPUT_DIR = '../data/',
 	MEDIA_TYPE = 'video',				// set to 'photo' for MMS, 'video' for SMS
 	STORE_ID = config.settings.store_id,							// store number: '1', '220', etc.
-	EXPIRE_TIME = new Date(Date.now() + 2592000 * 1000 * 3).toString(),			// S3 file expiration, in milliseconds: 1 mo. = 60 * 60 * 24 * 30 = 2592000
+	EXPIRE_TIME = 2592000 * 3,			// S3 file expiration, in milliseconds: 1 mo. = 60 * 60 * 24 * 30 = 2592000
 	AWS_PARAMS = config.AWS_params,
 	BUCKET = config.settings.bucket,
 	API_URL = config.settings.URLs.photobooth_gateway_URL;
 
 AWS.config.update(AWS_PARAMS);
-AWS.config.update({
-  httpOptions: { agent: proxy('http://webproxy.nordstrom.net:8181') }
-});
 
 var buffer = fs.readFileSync("../data/ports.xml");
 
@@ -174,6 +171,7 @@ function generateNordstromUrl(url){
 	//example url looks like this:
 	// https://idev-em-team.s3-us-west-2.amazonaws.com/store_1/110291237_h7rs.mp4?AWSAccessKeyId=AKIAJ562XF34DJP4TGJQ&Expires=1448739473&Signature=4uXQq%2F9z9Faq4KKOWJ0mMJFHZhU%3D
 	//we want to return everything after amazonaws.com/
+	return url; //debug base asset
 	return config.settings.shop_url + url.substr(url.search('store'));
 }
 
@@ -229,7 +227,7 @@ function generateFileStamp(UUID) {
 	var hours = addStringDigit(date.getHours().toString());
 	var minutes = addStringDigit(date.getMinutes().toString());
 
-	var file_stamp = STORE_ID.toString() + month.toString() + day.toString() + hours.toString() + minutes.toString() + '_' + mediaUUID;
+	var file_stamp = STORE_ID + month.toString() + day.toString() + hours.toString() + minutes.toString() + '_' + mediaUUID;
 
 	function addStringDigit(tempString) {
 		if (tempString.length === 1) { tempString = '0' + tempString; }
