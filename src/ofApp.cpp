@@ -290,8 +290,9 @@ void ofApp::draw(){
     else if(programState == FINISHED){
         // for testing, use 224-231-6799 to text for the video (URL). But in production, we use 206-569-5133
         stringstream ss;
+        string phoneNumber = "(206) 569-5133";
         ss << "Your video is ready. Please text " << code << " to\n" <<
-         "(224) 231-6799 receive your video. This code \nwill disappear in " <<
+        phoneNumber << " to receive your video. This code \nwill disappear in " <<
         int(timer.getTimeLeftInSeconds()) << " seconds.";
         message = ss.str();
         drawButton(ofVec2f(videoBottomRight.x - 50, videoBottomRight.y + 60));
