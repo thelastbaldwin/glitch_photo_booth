@@ -174,6 +174,7 @@ function generateNordstromUrl(url){
 	//example url looks like this:
 	// https://idev-em-team.s3-us-west-2.amazonaws.com/store_1/110291237_h7rs.mp4?AWSAccessKeyId=AKIAJ562XF34DJP4TGJQ&Expires=1448739473&Signature=4uXQq%2F9z9Faq4KKOWJ0mMJFHZhU%3D
 	//we want to return everything after amazonaws.com/
+	return url; //debug asset
 	return config.settings.shop_url + url.substr(url.search('store'));
 }
 
