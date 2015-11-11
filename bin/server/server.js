@@ -163,7 +163,21 @@ var aws_s3 = (function() {
 					sendOSCMessage('failure');
 				} else {
 					print('Returned signed URL: ' +  url);
-					postMetadataToGateway(generateNordstromUrl(url));
+					var fullUrl = generateNordstromUrl(url);
+					request({
+						url: config.google_params.apiUrl + '?key=' + config.google_params.apiKey,
+						method: 'POST',
+						json : { "longUrl" : fullUrl}
+						}, function(error, response, body){
+							print(error, response, body);
+							if(!error && response.statusCode === 200){
+								postMetadataToGateway(body.id);
+							}else{
+								sendOSCMessage('failure');
+								print('There was a problem shortening the url');
+							}
+						}
+					);
 				}
 			});
 		}
