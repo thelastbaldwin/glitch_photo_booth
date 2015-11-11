@@ -160,7 +160,21 @@ var aws_s3 = (function() {
 					sendOSCMessage('failure');
 				} else {
 					print('Returned signed URL: ' +  url);
-					postMetadataToGateway(generateNordstromUrl(url));
+					var fullUrl = generateNordstromUrl(url);
+					request({
+						url: config.google_params.apiUrl + '?key=' + config.google_params.apiKey,
+						method: 'POST',
+						json : { "longUrl" : fullUrl}
+						}, function(error, response, body){
+							print(error, response, body);
+							if(!error && response.statusCode === 200){
+								postMetadataToGateway(body.id);
+							}else{
+								sendOSCMessage('failure');
+								print('There was a problem shortening the url');
+							}
+						}
+					);
 				}
 			});
 		}
@@ -171,7 +185,7 @@ function generateNordstromUrl(url){
 	//example url looks like this:
 	// https://idev-em-team.s3-us-west-2.amazonaws.com/store_1/110291237_h7rs.mp4?AWSAccessKeyId=AKIAJ562XF34DJP4TGJQ&Expires=1448739473&Signature=4uXQq%2F9z9Faq4KKOWJ0mMJFHZhU%3D
 	//we want to return everything after amazonaws.com/
-	return url; //debug base asset
+	//return url; //debug base asset
 	return config.settings.shop_url + url.substr(url.search('store'));
 }
 
